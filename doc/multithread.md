@@ -1,0 +1,7 @@
+# 多线程下载文件实现原理
+
+- 利用UrlConnection与目标文件地址建立连接
+- 在请求属性中，设置Range为bytes=XXX-XXX，即可以读取目标文件的指定字节位置的数据
+- 用BufferedInputStream读取来自网络的文件流
+- 用RandomAccessFile的seek方法调整文件指针的位置，这样可以在指定位置写入从网络中读取的文件内容
+- 可以使用UrlConnection的getContentLength方法获取目标文件的大小

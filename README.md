@@ -5,4 +5,4 @@
 - 多线程
 - 断点续传
 - 支持BT下载
-- 支持magent link
+- 支持magnet link
