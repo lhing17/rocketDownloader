@@ -2,6 +2,7 @@ package com.ccjiuhong.download;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -35,10 +36,13 @@ public class DownloadManager {
      */
     private static Map<Integer, DownloadMission> missionMap = new HashMap<>();
 
+    private static final int MAX_WORK_NUM = 10;
+
     private static DownloadThreadPool downloadThreadPool =
-            new DownloadThreadPool(5, 10, 200L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1024));
+            new DownloadThreadPool(MAX_WORK_NUM, MAX_WORK_NUM, 200L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1024));
 
     private static BlockingQueue<DownloadMission> downloadMissionBlockingQueue = new LinkedBlockingQueue<>();
+
     /**
      * 私有构造器，防止直接实例化
      */
@@ -80,18 +84,34 @@ public class DownloadManager {
      */
     public boolean startMission(int missionId) {
         // 1.判断是否存在任务
-        if(!missionMap.containsKey(missionId)){
-            log.error("missionId: {} is not exist.",missionId);
+        if (!missionMap.containsKey(missionId)) {
+            log.error("missionId: {} is not exist.", missionId);
             return false;
         }
         DownloadMission downloadMission = missionMap.get(missionId);
+        MissionMonitor missionMonitor = new MissionMonitor();
+        // 先开启一个线程下载
+        DownloadRunnable downloadRunnable =
+                new DownloadRunnable(downloadMission.getTargetDirectory(), downloadMission.getTargetFileName(), downloadMission.getFileUrl(), missionMonitor, 0, downloadMission.getFileSize());
         // 2.创建download runable
-        if(downloadThreadPool.getActiveCount() == 0){
+        if (downloadThreadPool.getActiveCount() == 0) {
             return false;
         }
-        if(!downloadThreadPool.isTerminated()){
+        if (!downloadThreadPool.isTerminated()) {
             // 3.开启线程任务执行
-            //downloadThreadPool.execute(new DownloadRunnable(downloadMission));
+            downloadThreadPool.execute(downloadRunnable);
+            downloadMission.getRunnableList().add(downloadRunnable);
+
+            for (int i = 0; i < MAX_WORK_NUM; i++) {
+                // 执行剩下线程任务, 剩下线程处于当前下载位置处开始
+                DownloadRunnable downloadRunnableIn =
+                        new DownloadRunnable(downloadMission.getTargetDirectory(), downloadMission.getTargetFileName(), downloadMission.getFileUrl(), missionMonitor, 0, missionMonitor.getDownloadedSize().get(), downloadMission.getFileSize());
+                downloadThreadPool.execute(downloadRunnableIn);
+                // 加入线程列表
+                downloadMission.getRunnableList().add(downloadRunnableIn);
+            }
+
+            // TODO 4. 修改任务状态
             return true;
         }
         return false;
@@ -103,7 +123,8 @@ public class DownloadManager {
     public void startAll() {
         for (Integer missionId : missionMap.keySet()) {
             boolean missionSuccess = startMission(missionId);
-            if(!missionSuccess){
+            // 异常处理
+            if (!missionSuccess) {
                 downloadMissionBlockingQueue.offer(missionMap.get(missionId));
             }
         }
