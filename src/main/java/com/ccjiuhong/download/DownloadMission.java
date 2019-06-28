@@ -1,5 +1,7 @@
 package com.ccjiuhong.download;
 
+import lombok.Data;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +11,7 @@ import java.util.List;
  * @author G. Seinfeld
  * @date 2019/06/28
  */
+@Data
 public class DownloadMission {
     /**
      * 文件大小

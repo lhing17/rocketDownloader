@@ -1,7 +1,13 @@
 package com.ccjiuhong.download;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 下载管理器，封装了所有下载需要用到的方法，是GUI访问逻辑代码的唯一入口类。
@@ -13,18 +19,29 @@ import java.util.Map;
  * @author G. Seinfeld
  * @date 2019/06/28
  */
+@Slf4j
 public class DownloadManager {
     /**
      * 下载任务的ID，从0开始，每次加1
      */
     private static int serialMissionId = 0;
-    // 下载管理器的单例对象
+    /**
+     * 下载管理器的单例对象
+     */
     private static DownloadManager downloadManager;
 
-    // 缓存所有的下载任务，这里的key是任务的ID
+    /**
+     * 缓存所有的下载任务，这里的key是任务的ID
+     */
     private static Map<Integer, DownloadMission> missionMap = new HashMap<>();
 
-    // 私有构造器，防止直接实例化
+    private static DownloadThreadPool downloadThreadPool =
+            new DownloadThreadPool(5, 10, 200L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1024));
+
+    private static BlockingQueue<DownloadMission> downloadMissionBlockingQueue = new LinkedBlockingQueue<>();
+    /**
+     * 私有构造器，防止直接实例化
+     */
     private DownloadManager() {
 
     }
@@ -34,9 +51,13 @@ public class DownloadManager {
      *
      * @return 下载管理器的单例对象
      */
-    public synchronized static DownloadManager getInstance() {
+    public static DownloadManager getInstance() {
         if (downloadManager == null) {
-            downloadManager = new DownloadManager();
+            synchronized (DownloadManager.class) {
+                if (downloadManager != null) {
+                    downloadManager = new DownloadManager();
+                }
+            }
         }
         return downloadManager;
     }
@@ -57,7 +78,23 @@ public class DownloadManager {
      *
      * @param missionId 任务ID
      */
-    public void startMission(int missionId) {
+    public boolean startMission(int missionId) {
+        // 1.判断是否存在任务
+        if(!missionMap.containsKey(missionId)){
+            log.error("missionId: {} is not exist.",missionId);
+            return false;
+        }
+        DownloadMission downloadMission = missionMap.get(missionId);
+        // 2.创建download runable
+        if(downloadThreadPool.getActiveCount() == 0){
+            return false;
+        }
+        if(!downloadThreadPool.isTerminated()){
+            // 3.开启线程任务执行
+            //downloadThreadPool.execute(new DownloadRunnable(downloadMission));
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -65,7 +102,10 @@ public class DownloadManager {
      */
     public void startAll() {
         for (Integer missionId : missionMap.keySet()) {
-            startMission(missionId);
+            boolean missionSuccess = startMission(missionId);
+            if(!missionSuccess){
+                downloadMissionBlockingQueue.offer(missionMap.get(missionId));
+            }
         }
     }
 

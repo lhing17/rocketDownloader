@@ -97,7 +97,6 @@ public class DownloadRunnable implements Runnable {
                 } else {
                     randomAccessFile.write(buffer, 0, len);
                     currentPosition += len;
-
                 }
             }
             bufferedInputStream.close();
