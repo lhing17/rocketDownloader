@@ -14,6 +14,10 @@ import java.util.Map;
  * @date 2019/06/28
  */
 public class DownloadManager {
+    /**
+     * 下载任务的ID，从0开始，每次加1
+     */
+    private static int serialMissionId = 0;
     // 下载管理器的单例对象
     private static DownloadManager downloadManager;
 
@@ -35,6 +39,16 @@ public class DownloadManager {
             downloadManager = new DownloadManager();
         }
         return downloadManager;
+    }
+
+    /**
+     * FIXME 在本类中统一处理ID的问题，不要在DownloadMission类中再建一套ID的体系
+     * 添加一个新的下载任务
+     *
+     * @param downloadMission 下载任务
+     */
+    public void addMission(DownloadMission downloadMission) {
+        missionMap.put(serialMissionId++, downloadMission);
     }
 
     /**
