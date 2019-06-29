@@ -1,16 +1,27 @@
 package com.ccjiuhong.download;
 
+import com.ccjiuhong.monitor.MissionMonitor;
+import com.ccjiuhong.monitor.SpeedMonitor;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author G. Seinfeld
  * @date 2019/06/27
  */
+@Data
+@Slf4j
 public class DownloadRunnable implements Runnable {
     private static final int BUFFER_SIZE = 1024;
     /**
@@ -47,18 +58,25 @@ public class DownloadRunnable implements Runnable {
     private long endPosition;
 
     /**
+     * 线程ID
+     */
+    private int id;
+
+    private static int ID_COUNTER = 0;
+
+
+    /**
      * 构造新的下载线程
      *
      * @param targetDirectory 目标目录
      * @param targetFileName  目标文件名
      * @param fileUrl         文件下载地址
-     * @param missionMonitor  任务监测器
      * @param startPosition   下载开始位置
      * @param currentPosition 当前位置
      * @param endPosition     结束位置
      */
-    public DownloadRunnable(String targetDirectory, String targetFileName, String fileUrl,
-                            MissionMonitor missionMonitor, long startPosition, long currentPosition, long endPosition) {
+    public DownloadRunnable(String targetDirectory, String targetFileName, String fileUrl, MissionMonitor missionMonitor,
+                            long startPosition, long currentPosition, long endPosition) {
         this.targetDirectory = targetDirectory;
         this.targetFileName = targetFileName;
         this.fileUrl = fileUrl;
@@ -66,18 +84,20 @@ public class DownloadRunnable implements Runnable {
         this.startPosition = startPosition;
         this.currentPosition = currentPosition;
         this.endPosition = endPosition;
+        this.id = ID_COUNTER++;
     }
 
     /**
      * 不提供当前位置，则以开始位置作为当前位置
      */
-    public DownloadRunnable(String targetDirectory, String targetFileName, String fileUrl,
-                            MissionMonitor missionMonitor, long startPosition, long endPosition) {
+    public DownloadRunnable(String targetDirectory, String targetFileName, String fileUrl, MissionMonitor missionMonitor, long startPosition, long endPosition) {
         this(targetDirectory, targetFileName, fileUrl, missionMonitor, startPosition, startPosition, endPosition);
     }
 
     @Override
     public void run() {
+
+
         File targetFile = createTargetFile();
         BufferedInputStream bufferedInputStream;
         RandomAccessFile randomAccessFile;
@@ -100,12 +120,13 @@ public class DownloadRunnable implements Runnable {
                 } else {
                     randomAccessFile.write(buffer, 0, len);
                     currentPosition += len;
+                    missionMonitor.down(len);
                 }
             }
             bufferedInputStream.close();
             randomAccessFile.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("文件读取不正确", e);
         }
     }
 
@@ -143,10 +164,14 @@ public class DownloadRunnable implements Runnable {
             long newEndPosition = endPosition;
             long newStartPosition = currentPosition + half + 1;
             endPosition = newStartPosition - 1;
-            return new DownloadRunnable(targetDirectory, targetFileName, fileUrl,
-                    missionMonitor, newStartPosition, newEndPosition);
+            return new DownloadRunnable(targetDirectory, targetFileName, fileUrl, missionMonitor, newStartPosition, newEndPosition);
         } else {
             return null;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "DownloadRunnable{" + targetFileName + ":" + id + "}";
     }
 }

@@ -1,14 +1,20 @@
 package com.ccjiuhong.download;
 
+import com.ccjiuhong.monitor.MissionMonitor;
+import com.ccjiuhong.monitor.SpeedMonitor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 指一个下载任务的对象，一个下载任务可以由多个线程组成
@@ -40,6 +46,14 @@ public class DownloadMission {
      */
     private String targetFileName;
     /**
+     * 任务监测器
+     */
+    private MissionMonitor missionMonitor = new MissionMonitor();
+    /**
+     * 速度监测器
+     */
+    private SpeedMonitor speedMonitor;
+    /**
      * 下载线程列表
      */
     private List<DownloadRunnable> runnableList = new ArrayList<>();
@@ -47,7 +61,11 @@ public class DownloadMission {
      * 下载状态
      */
     private EnumDownloadStatus downloadStatus = EnumDownloadStatus.READY;
-
+    /**
+     * 用于执行速度监测的定时线程池
+     */
+    private ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
+            new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
     /**
      * 一个下载任务分配的最大线程数
      */
@@ -79,15 +97,20 @@ public class DownloadMission {
         if ((fileSize = getFileSizeFromUrl(fileUrl)) == 0) {
             return false;
         }
+
+        speedMonitor = new SpeedMonitor(this);
+        // 开启速度监测
+        executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
+
         // 开启线程任务执行
         for (int i = 0; i < MAX_THREAD_PER_MISSION; i++) {
             long start = i * (fileSize / MAX_THREAD_PER_MISSION);
             long end = (i == MAX_THREAD_PER_MISSION - 1)
                     ? fileSize - 1
                     : (i + 1) * (fileSize / MAX_THREAD_PER_MISSION) - 1;
-            // FIXME 任务监测器的逻辑需要修改
             DownloadRunnable downloadRunnable =
-                    new DownloadRunnable(targetDirectory, targetFileName, fileUrl, new MissionMonitor(), start, end);
+                    new DownloadRunnable(targetDirectory, targetFileName, fileUrl, missionMonitor, start, end);
+
             log.info("新增下载线程，任务ID为{}，文件大小为{}，开始位置为{}，结束位置为{}", missionId, fileSize, start, end);
             downloadThreadPool.execute(downloadRunnable);
             runnableList.add(downloadRunnable);

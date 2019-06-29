@@ -1,14 +1,14 @@
 package com.ccjiuhong.download;
 
+import com.ccjiuhong.util.DownloadUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.Timer;
+import java.util.concurrent.*;
 
 /**
  * 下载管理器，封装了所有下载需要用到的方法，是GUI访问逻辑代码的唯一入口类。
@@ -38,6 +38,9 @@ public class DownloadManager {
 
     private static final int MAX_WORK_NUM = 10;
 
+    /**
+     * 下载的线程池
+     */
     private static DownloadThreadPool downloadThreadPool =
             new DownloadThreadPool(MAX_WORK_NUM, MAX_WORK_NUM, 200L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1024));
 
@@ -97,13 +100,22 @@ public class DownloadManager {
      */
     public boolean startMission(int missionId) {
         log.info("尝试开启任务，任务ID为{}", missionId);
+        assertMissionExists(missionId);
+        DownloadMission downloadMission = missionMap.get(missionId);
+        return downloadMission.start(downloadThreadPool);
+    }
+
+    /**
+     * 确保任务存在，如果不存在，抛出异常，以实现快速失败
+     *
+     * @param missionId 任务ID
+     */
+    private void assertMissionExists(int missionId) {
         // 判断是否存在任务
         if (!missionMap.containsKey(missionId)) {
             log.warn("missionId: {} does not exist.", missionId);
-            return false;
+            throw new IllegalStateException("任务不存在");
         }
-        DownloadMission downloadMission = missionMap.get(missionId);
-        return downloadMission.start(downloadThreadPool);
     }
 
     /**
@@ -156,18 +168,18 @@ public class DownloadManager {
     }
 
     /**
-     * TODO
      * 获取以字节数表示的下载速度，这里下载速度指上一秒内下载的字节数
      *
      * @param missionId 任务ID
      * @return 下载速度
      */
     public long getSpeed(int missionId) {
-        return 0;
+        assertMissionExists(missionId);
+        DownloadMission downloadMission = missionMap.get(missionId);
+        return downloadMission.getSpeedMonitor().getSpeed();
     }
 
     /**
-     * TODO
      * 获取所有任务累计的以字节数表示的下载速度
      *
      * @return 总下载速度
@@ -181,24 +193,27 @@ public class DownloadManager {
     }
 
     /**
-     * TODO
      * 获取某一下载任务已下载的文件大小，以字节表示
      *
      * @param missionId 任务ID
      * @return 已下载的文件大小
      */
     public long getDownloadedSize(int missionId) {
-        return 0;
+        assertMissionExists(missionId);
+        DownloadMission downloadMission = missionMap.get(missionId);
+        return downloadMission.getMissionMonitor().getDownloadedSize().get();
     }
 
     /**
-     * TODO
      * 获取某一下载任务已完成的百分比，以字符串表示，保留两位有效数字
      *
      * @param missionId 任务ID
      * @return 百分比
      */
     public String getReadableDownloadedPercent(int missionId) {
-        return null;
+        assertMissionExists(missionId);
+        DownloadMission downloadMission = missionMap.get(missionId);
+        double percent = 100.0 * downloadMission.getSpeedMonitor().getCurrentSize() / downloadMission.getFileSize();
+        return DownloadUtil.getReadablePercent(percent);
     }
 }
