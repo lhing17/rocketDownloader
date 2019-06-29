@@ -58,7 +58,7 @@ public class DownloadManager {
     public static DownloadManager getInstance() {
         if (downloadManager == null) {
             synchronized (DownloadManager.class) {
-                if (downloadManager != null) {
+                if (downloadManager == null) {
                     downloadManager = new DownloadManager();
                 }
             }
@@ -67,54 +67,39 @@ public class DownloadManager {
     }
 
     /**
-     * FIXME 在本类中统一处理ID的问题，不要在DownloadMission类中再建一套ID的体系
+     * 添加一个新的下载任务
+     *
+     * @param fileUrl         文件地址
+     * @param targetDirectory 目标文件夹
+     * @param targetFileName  目标文件名
+     */
+    public void addMission(String fileUrl, String targetDirectory, String targetFileName) {
+        DownloadMission downloadMission = new DownloadMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
+        addMission(downloadMission);
+    }
+
+    /**
      * 添加一个新的下载任务
      *
      * @param downloadMission 下载任务
      */
-    public void addMission(DownloadMission downloadMission) {
-        missionMap.put(serialMissionId++, downloadMission);
+    private void addMission(DownloadMission downloadMission) {
+        missionMap.put(downloadMission.getMissionId(), downloadMission);
     }
 
     /**
-     * TODO
      * 开始某个下载任务
      *
      * @param missionId 任务ID
      */
     public boolean startMission(int missionId) {
-        // 1.判断是否存在任务
+        // 判断是否存在任务
         if (!missionMap.containsKey(missionId)) {
-            log.error("missionId: {} is not exist.", missionId);
+            log.warn("missionId: {} does not exist.", missionId);
             return false;
         }
         DownloadMission downloadMission = missionMap.get(missionId);
-        MissionMonitor missionMonitor = new MissionMonitor();
-        // 先开启一个线程下载
-        DownloadRunnable downloadRunnable =
-                new DownloadRunnable(downloadMission.getTargetDirectory(), downloadMission.getTargetFileName(), downloadMission.getFileUrl(), missionMonitor, 0, downloadMission.getFileSize());
-        // 2.创建download runable
-        if (downloadThreadPool.getActiveCount() == 0) {
-            return false;
-        }
-        if (!downloadThreadPool.isTerminated()) {
-            // 3.开启线程任务执行
-            downloadThreadPool.execute(downloadRunnable);
-            downloadMission.getRunnableList().add(downloadRunnable);
-
-            for (int i = 0; i < MAX_WORK_NUM; i++) {
-                // 执行剩下线程任务, 剩下线程处于当前下载位置处开始
-                DownloadRunnable downloadRunnableIn =
-                        new DownloadRunnable(downloadMission.getTargetDirectory(), downloadMission.getTargetFileName(), downloadMission.getFileUrl(), missionMonitor, 0, missionMonitor.getDownloadedSize().get(), downloadMission.getFileSize());
-                downloadThreadPool.execute(downloadRunnableIn);
-                // 加入线程列表
-                downloadMission.getRunnableList().add(downloadRunnableIn);
-            }
-
-            // TODO 4. 修改任务状态
-            return true;
-        }
-        return false;
+        return downloadMission.start(downloadThreadPool);
     }
 
     /**
@@ -123,7 +108,7 @@ public class DownloadManager {
     public void startAll() {
         for (Integer missionId : missionMap.keySet()) {
             boolean missionSuccess = startMission(missionId);
-            // 异常处理
+            // 异常处理，暂时将任务加入到一个缓冲队列中
             if (!missionSuccess) {
                 downloadMissionBlockingQueue.offer(missionMap.get(missionId));
             }

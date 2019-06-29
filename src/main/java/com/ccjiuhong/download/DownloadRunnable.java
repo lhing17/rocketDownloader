@@ -13,7 +13,10 @@ import java.net.URLConnection;
  */
 public class DownloadRunnable implements Runnable {
     private static final int BUFFER_SIZE = 1024;
-    private static final long SPLIT_THRESHOLD = 1 << 20; // 1048576 bytes, aka 1M bytes
+    /**
+     * 1048576字节，即1MB
+     */
+    private static final long SPLIT_THRESHOLD = 1 << 20;
     /**
      * 目标文件夹
      */
@@ -115,7 +118,9 @@ public class DownloadRunnable implements Runnable {
         File targetFile;
         synchronized (this) {
             File dir = new File(targetDirectory);
-            if (!dir.exists()) dir.mkdirs();
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
             targetFile = new File(targetDirectory + File.separator + targetFileName);
             if (!targetFile.exists()) {
                 try {
