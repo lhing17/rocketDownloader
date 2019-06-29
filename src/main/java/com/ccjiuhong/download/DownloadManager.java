@@ -72,10 +72,13 @@ public class DownloadManager {
      * @param fileUrl         文件地址
      * @param targetDirectory 目标文件夹
      * @param targetFileName  目标文件名
+     * @return 任务ID
      */
-    public void addMission(String fileUrl, String targetDirectory, String targetFileName) {
+    public int addMission(String fileUrl, String targetDirectory, String targetFileName) {
+        log.info("增加了下载任务，文件地址为：{}，目标目录为{}，目标文件名为：{}", fileUrl, targetDirectory, targetFileName);
         DownloadMission downloadMission = new DownloadMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
         addMission(downloadMission);
+        return downloadMission.getMissionId();
     }
 
     /**
@@ -93,6 +96,7 @@ public class DownloadManager {
      * @param missionId 任务ID
      */
     public boolean startMission(int missionId) {
+        log.info("尝试开启任务，任务ID为{}", missionId);
         // 判断是否存在任务
         if (!missionMap.containsKey(missionId)) {
             log.warn("missionId: {} does not exist.", missionId);

@@ -68,9 +68,9 @@ public class DownloadMission {
      */
     public boolean start(DownloadThreadPool downloadThreadPool) {
         // 线程池没有可用线程
-        if (downloadThreadPool.getActiveCount() == 0) {
-            return false;
-        }
+//        if (downloadThreadPool.getPoolSize() == 0) {
+//            return false;
+//        }
         // 线程池已停止
         if (downloadThreadPool.isTerminated()) {
             return false;
@@ -88,6 +88,7 @@ public class DownloadMission {
             // FIXME 任务监测器的逻辑需要修改
             DownloadRunnable downloadRunnable =
                     new DownloadRunnable(targetDirectory, targetFileName, fileUrl, new MissionMonitor(), start, end);
+            log.info("新增下载线程，任务ID为{}，文件大小为{}，开始位置为{}，结束位置为{}", missionId, fileSize, start, end);
             downloadThreadPool.execute(downloadRunnable);
             runnableList.add(downloadRunnable);
         }
@@ -108,7 +109,7 @@ public class DownloadMission {
         try {
             URL url = new URL(fileUrl);
             URLConnection urlConnection = url.openConnection();
-            return urlConnection.getContentLength();
+            return urlConnection.getContentLengthLong();
         } catch (IOException e) {
             log.error("从服务器获取文件大小失败", e);
             return 0;
