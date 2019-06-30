@@ -8,6 +8,7 @@
     <artifactId>rocketDownloader</artifactId>
     <version>1.0-SNAPSHOT</version>
     <dependencies>
+
         <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-slf4j-impl -->
         <!--slf4j和log4j的桥接包，使用log4j作为日志系统，使用slf4j作为日志门面-->
         <dependency>
@@ -15,6 +16,7 @@
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>2.9.1</version>
         </dependency>
+
         <!--junit，用于单元测试-->
         <dependency>
             <groupId>junit</groupId>
@@ -22,6 +24,7 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.assertj/assertj-core -->
         <!-- assertj，用于单元测试的断言-->
         <dependency>
@@ -30,6 +33,7 @@
             <version>3.11.1</version>
             <scope>test</scope>
         </dependency>
+
         <!-- lombok，用于简化代码-->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -37,6 +41,7 @@
             <version>1.18.2</version>
             <scope>provided</scope>
         </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
         <!-- apache的commons-lang包，补充一些常用的工具 -->
         <dependency>
