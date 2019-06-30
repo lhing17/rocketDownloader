@@ -2,6 +2,7 @@ package com.ccjiuhong.monitor;
 
 import com.ccjiuhong.download.DownloadMission;
 import com.ccjiuhong.download.DownloadRunnable;
+import com.ccjiuhong.download.EnumDownloadStatus;
 import com.ccjiuhong.util.DownloadUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,6 +35,8 @@ public class SpeedMonitor implements Runnable {
         lastSecondSize = currentSize;
         currentSize = downloadMission.getMissionMonitor().getDownloadedSize().get();
         speed = currentSize - lastSecondSize;
-        log.info("当前下载任务为{}，下载速度为{}", downloadMission.getMissionId(), DownloadUtil.getReadableSpeed(speed));
+        if (!EnumDownloadStatus.FINISHED.equals(downloadMission.getDownloadStatus())){
+            log.info("当前下载任务为{}，下载速度为{}", downloadMission.getMissionId(), DownloadUtil.getReadableSpeed(speed));
+        }
     }
 }

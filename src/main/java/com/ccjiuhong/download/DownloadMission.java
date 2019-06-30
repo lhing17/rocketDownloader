@@ -48,7 +48,7 @@ public class DownloadMission {
     /**
      * 任务监测器
      */
-    private MissionMonitor missionMonitor = new MissionMonitor();
+    private MissionMonitor missionMonitor;
     /**
      * 速度监测器
      */
@@ -98,6 +98,7 @@ public class DownloadMission {
             return false;
         }
 
+        missionMonitor = new MissionMonitor(this);
         speedMonitor = new SpeedMonitor(this);
         // 开启速度监测
         executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
