@@ -2,7 +2,7 @@
 
 
 
-<h1 align="center">Welcome to rocketDownloader 👋</h1>
+<h1 align="center">欢迎使用rocketDownloader 👋</h1>
 <p>
   <img src="https://img.shields.io/badge/version-0.1.0-blue.svg?cacheSeconds=2592000" />
   <img src="https://img.shields.io/badge/java-%3E%3D11.0.0-blue.svg" />
@@ -10,7 +10,7 @@
   <a href="https://github.com/lhing17/rocketDownloader#readme">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" target="_blank" />
   </a>
-  <a href="https://github.com/kefranabg/readme-md-generator/graphs/commit-activity">
+  <a href="https://github.com/lhing17/rocketDownloader/graphs/commit-activity">
     <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" target="_blank" />
   </a>
   <a href="https://github.com/lhing17/rocketDownloader/blob/master/LICENSE">
@@ -24,8 +24,9 @@
 
 ## 开发环境
 
-- java(jdk) &gt;=11.0.0
-- kotlin &gt;=1.3.0
+- java(jdk) &gt;= 11.0.0
+- kotlin &gt;= 1.3.0
+- maven &gt;= 3.3.9
 
 ## 项目构建
 
@@ -48,11 +49,11 @@ mvn test
 
 ## 项目作者
 
-👤 **G_Seinfeld** Github: [@lhing17](https://github.com/lhing17)
+👤 [**G_Seinfeld**](https://github.com/lhing17)
 
-👤 **dagerer** Github: [@dagerer](https://github.com/dagerer)
+👤 [**dagerer**](https://github.com/dagerer)
 
-👤 **siyunyan** Github: [@siyunyan](https://github.com/siyunyan)
+👤 [**siyunyan**](https://github.com/siyunyan)
  
 
 ## 🤝 贡献代码
