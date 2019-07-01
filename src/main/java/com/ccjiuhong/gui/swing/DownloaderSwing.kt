@@ -42,7 +42,7 @@ constructor() : JFrame() {
         val jButton = JButton()
         jButton.text = "新建下载"
         jButton.addActionListener {
-            val fileUrl = JOptionPane.showInputDialog("input mission url")
+            val fileUrl = JOptionPane.showInputDialog("请输入下载地址")
             if (fileUrl != null) startMissionForUrl(fileUrl, downloadManager)
         }
         jPanel.add(jButton)
