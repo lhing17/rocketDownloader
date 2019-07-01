@@ -1,12 +1,15 @@
 package com.ccjiuhong.gui.swing
 
 
+import com.alibaba.fastjson.JSONObject
 import com.ccjiuhong.download.DownloadManager
 import com.ccjiuhong.gui.common.Configuration.*
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.awt.Font
 import java.awt.HeadlessException
+import java.io.File
 import java.util.*
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -21,6 +24,12 @@ import javax.swing.*
 class DownloaderSwing @Throws(HeadlessException::class)
 constructor() : JFrame() {
     init {
+
+        val jsonConfig = JSONObject.parseObject(File("config/config.json").readText())
+        val lang = jsonConfig["language"]
+
+        val languageConfig = JSONObject.parseObject(File("config/$lang.json").readText())
+
         // 设置标题
         title = TITLE
 
@@ -40,17 +49,27 @@ constructor() : JFrame() {
 
 
         val jButton = JButton()
-        jButton.text = "新建下载"
+        jButton.text = languageConfig["newTask"] as String?
         jButton.addActionListener {
-            val fileUrl = JOptionPane.showInputDialog("请输入下载地址")
+            val fileUrl = JOptionPane.showInputDialog(languageConfig["inputAddress"] as String?)
             if (fileUrl != null) startMissionForUrl(fileUrl, downloadManager)
         }
         jPanel.add(jButton)
 
         val configCenter = JButton()
-        configCenter.text = "配置中心"
+        configCenter.text = languageConfig["configCenter"] as String?
         configCenter.addActionListener {
-            println("你点击了配置中心，即将开始配置")
+            val file = File("config/config.json")
+            val s = file.readText()
+            val frame = JFrame()
+            frame.setSize(600, 480)
+            frame.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+            frame.isVisible = true
+            frame.requestFocus()
+            val configText = JTextArea(s)
+            configText.font = Font("Microsoft YaHei", Font.PLAIN, 16)
+            frame.contentPane.add(configText)
+
         }
         jPanel.add(configCenter)
 
