@@ -25,10 +25,12 @@ class DownloaderSwing @Throws(HeadlessException::class)
 constructor() : JFrame() {
     init {
 
+        // 读取配置文件
         val jsonConfig = JSONObject.parseObject(File("config/config.json").readText())
-        val lang = jsonConfig["language"]
 
-        val languageConfig = JSONObject.parseObject(File("config/$lang.json").readText())
+        // 读取语言包配置
+        val lang = jsonConfig["language"]
+        val languageConfig = JSONObject.parseObject(File("config/i18n/$lang.json").readText())
 
         // 设置标题
         title = TITLE
@@ -47,7 +49,7 @@ constructor() : JFrame() {
         val jPanel = JPanel()
         add(jPanel)
 
-
+        // 新建下载的按钮，点击按钮，在弹出框输入URL后点击确定即可开启下载
         val jButton = JButton()
         jButton.text = languageConfig["newTask"] as String?
         jButton.addActionListener {
@@ -61,14 +63,17 @@ constructor() : JFrame() {
         configCenter.addActionListener {
             val file = File("config/config.json")
             val s = file.readText()
-            val frame = JFrame()
+            val frame = JDialog(this, languageConfig["configCenter"] as String?, true)
             frame.setSize(600, 480)
             frame.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-            frame.isVisible = true
-            frame.requestFocus()
+
             val configText = JTextArea(s)
             configText.font = Font("Microsoft YaHei", Font.PLAIN, 16)
             frame.contentPane.add(configText)
+
+//            frame.pack()
+            frame.isVisible = true
+
 
         }
         jPanel.add(configCenter)
