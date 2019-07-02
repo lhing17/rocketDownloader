@@ -88,15 +88,7 @@ public class DownloadMission {
 //        if (downloadThreadPool.getPoolSize() == 0) {
 //            return false;
 //        }
-        // 线程池已停止
-        if (downloadThreadPool.isTerminated()) {
-            return false;
-        }
-        // 获取文件大小，获取失败则返回false
-        if ((fileSize = getFileSizeFromUrl(fileUrl)) == 0) {
-            return false;
-        }
-
+        assertCurrentMission(downloadThreadPool);
         missionMonitor = new MissionMonitor(this);
         speedMonitor = new SpeedMonitor(this);
         // 开启速度监测
@@ -117,10 +109,24 @@ public class DownloadMission {
         }
 
         // 修改任务状态
-        downloadStatus = EnumDownloadStatus.DOWNLOADING;
+        EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
         return true;
+    }
+
+
+    public boolean pause(DownloadThreadPool downloadThreadPool) {
+        // 校验线程状态
+        assertCurrentMission(downloadThreadPool);
+        // 暂停线程
+        downloadThreadPool.shutdownNow();
+        // 更新配置
+
+        // 校验下载状态
+        EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
+
 
     }
+
 
     /**
      * 暂停当前任务
@@ -156,4 +162,17 @@ public class DownloadMission {
             return 0;
         }
     }
+
+    private void assertCurrentMission(DownloadThreadPool downloadThreadPool) {
+        // 线程池已停止
+        if (downloadThreadPool.isTerminated()) {
+            throw new IllegalStateException("线程池已停止");
+        }
+        // 获取文件大小，获取失败则返回false
+        if ((fileSize = getFileSizeFromUrl(fileUrl)) == 0) {
+            throw new IllegalStateException("获取文件大小失败");
+        }
+    }
+
+
 }

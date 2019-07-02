@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * 下载管理器，封装了所有下载需要用到的方法，是GUI访问逻辑代码的唯一入口类。
@@ -165,6 +166,7 @@ public class DownloadManager {
      * @param missionId 任务ID
      */
     public void cancelMission(int missionId) {
+
     }
 
     /**

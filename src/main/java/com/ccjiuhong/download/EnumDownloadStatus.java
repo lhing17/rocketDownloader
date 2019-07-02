@@ -41,4 +41,19 @@ public enum EnumDownloadStatus {
         }
         return null;
     }
+
+    /**
+     *
+     *
+     * @param except
+     * @param update
+     */
+    public static void compareAndSetDownloadStatus(EnumDownloadStatus except,EnumDownloadStatus update) {
+        if(except == null || update == null){
+            throw new IllegalStateException("下载状态设置错误");
+        }
+        if(except.getCode() != update.getCode()){
+            except.code = update.code;
+        }
+    }
 }
