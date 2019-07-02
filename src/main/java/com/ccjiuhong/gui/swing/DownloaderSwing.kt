@@ -24,6 +24,8 @@ import java.io.File
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import javax.swing.*
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 
 
 /**
@@ -94,13 +96,16 @@ constructor() : JFrame() {
         val jMenu = JMenu(languageConfig["task"] as String?)
         jMenuBar.add(jMenu)
 
-        val item0 = JMenuItem(languageConfig["newTask"] as String?)
-        jMenu.add(item0)
-        item0.addActionListener {
-            val fileUrl = JOptionPane.showInputDialog(languageConfig["inputAddress"] as String?)
-            if (fileUrl != null) startMissionForUrl(fileUrl, downloadManager, chart)
-        }
+        // 添加新建下载任务的菜单项
+        addNewTaskMenuItem(jMenu, downloadManager, chart)
 
+        // 添加修改配置的菜单项
+        addConfigCenterMenuItem(jMenu)
+
+        isVisible = true
+    }
+
+    private fun addConfigCenterMenuItem(jMenu: JMenu) {
         val item1 = JMenuItem(languageConfig["configCenter"] as String?)
         jMenu.add(item1)
         item1.addActionListener {
@@ -112,14 +117,36 @@ constructor() : JFrame() {
 
             val configText = JTextArea(s)
             configText.font = Font("Microsoft YaHei", Font.PLAIN, 16)
+            configText.document.addDocumentListener(object : DocumentListener{
+                override fun changedUpdate(e: DocumentEvent?) {
+                    println("changed")
+                }
+
+                override fun insertUpdate(e: DocumentEvent?) {
+                    println("inserted")
+                }
+
+                override fun removeUpdate(e: DocumentEvent?) {
+                    println("removed")
+                }
+
+            })
+
             frame.contentPane.add(configText)
 
-//            frame.pack()
+            //            frame.pack()
             frame.isVisible = true
 
         }
+    }
 
-        isVisible = true
+    private fun addNewTaskMenuItem(jMenu: JMenu, downloadManager: DownloadManager, chart: JFreeChart) {
+        val item0 = JMenuItem(languageConfig["newTask"] as String?)
+        jMenu.add(item0)
+        item0.addActionListener {
+            val fileUrl = JOptionPane.showInputDialog(languageConfig["inputAddress"] as String?)
+            if (fileUrl != null) startMissionForUrl(fileUrl, downloadManager, chart)
+        }
     }
 
     /**
