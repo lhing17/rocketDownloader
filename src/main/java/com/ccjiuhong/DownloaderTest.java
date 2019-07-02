@@ -4,8 +4,6 @@ import com.ccjiuhong.download.DownloadManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -23,15 +21,10 @@ public class DownloaderTest {
         String targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
 //        String targetFileName = "jdk-11.0.3_windows-x64_bin.zip";
         int missionId = downloadManager.addMission(fileUrl, "F:\\rocketDownloader", targetFileName);
-        downloadManager.startMission(missionId);
+        downloadManager.startOrResumeMission(missionId);
 
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
                 new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
-        executorService.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                log.info("当前下载百分比为：" + downloadManager.getReadableDownloadedPercent(missionId));
-            }
-        }, 0, 1, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + downloadManager.getReadableDownloadedPercent(missionId)), 0, 1, TimeUnit.SECONDS);
     }
 }

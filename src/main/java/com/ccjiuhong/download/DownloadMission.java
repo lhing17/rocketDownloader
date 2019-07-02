@@ -11,7 +11,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -113,7 +112,7 @@ public class DownloadMission {
                     new DownloadRunnable(targetDirectory, targetFileName, fileUrl, missionMonitor, start, end);
 
             log.info("新增下载线程，任务ID为{}，文件大小为{}，开始位置为{}，结束位置为{}", missionId, fileSize, start, end);
-            downloadThreadPool.execute(downloadRunnable);
+            downloadThreadPool.submit(downloadRunnable);
             runnableList.add(downloadRunnable);
         }
 
@@ -121,6 +120,24 @@ public class DownloadMission {
         downloadStatus = EnumDownloadStatus.DOWNLOADING;
         return true;
 
+    }
+
+    /**
+     * 暂停当前任务
+     *
+     * @param downloadThreadPool 下载的线程池
+     * @return 暂停成功返回true，否则返回false
+     */
+    public boolean pause(DownloadThreadPool downloadThreadPool) {
+        try {
+            downloadThreadPool.pause(missionId);
+            // 修改任务状态为暂停
+            downloadStatus = EnumDownloadStatus.PAUSED;
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
     }
 
     /**

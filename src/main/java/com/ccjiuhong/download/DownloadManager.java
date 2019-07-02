@@ -2,13 +2,12 @@ package com.ccjiuhong.download;
 
 import com.ccjiuhong.util.DownloadUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 下载管理器，封装了所有下载需要用到的方法，是GUI访问逻辑代码的唯一入口类。
@@ -42,7 +41,8 @@ public class DownloadManager {
      * 下载的线程池
      */
     private static DownloadThreadPool downloadThreadPool =
-            new DownloadThreadPool(MAX_WORK_NUM, MAX_WORK_NUM, 200L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1024));
+            new DownloadThreadPool(MAX_WORK_NUM, MAX_WORK_NUM, 200L, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(1024));
 
     private static BlockingQueue<DownloadMission> downloadMissionBlockingQueue = new LinkedBlockingQueue<>();
 
@@ -79,7 +79,8 @@ public class DownloadManager {
      */
     public int addMission(String fileUrl, String targetDirectory, String targetFileName) {
         log.info("增加了下载任务，文件地址为：{}，目标目录为{}，目标文件名为：{}", fileUrl, targetDirectory, targetFileName);
-        DownloadMission downloadMission = new DownloadMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
+        DownloadMission downloadMission = new DownloadMission(serialMissionId++, fileUrl, targetDirectory,
+                targetFileName);
         addMission(downloadMission);
         return downloadMission.getMissionId();
     }
@@ -95,10 +96,12 @@ public class DownloadManager {
 
     /**
      * 开始某个下载任务
+     * <p>如果任务已存在，从进度文件中获取进度，并继续下载</p>
+     * TODO 从进度文件读取的逻辑还没有实现
      *
      * @param missionId 任务ID
      */
-    public boolean startMission(int missionId) {
+    public boolean startOrResumeMission(int missionId) {
         log.info("尝试开启任务，任务ID为{}", missionId);
         assertMissionExists(missionId);
         DownloadMission downloadMission = missionMap.get(missionId);
@@ -123,8 +126,8 @@ public class DownloadManager {
      */
     public void startAll() {
         for (Integer missionId : missionMap.keySet()) {
-            boolean missionSuccess = startMission(missionId);
-            // 异常处理，暂时将任务加入到一个缓冲队列中
+            boolean missionSuccess = startOrResumeMission(missionId);
+            // FIXME 异常处理，暂时将任务加入到一个缓冲队列中，这有啥用？@dagerer
             if (!missionSuccess) {
                 downloadMissionBlockingQueue.offer(missionMap.get(missionId));
             }
@@ -132,12 +135,15 @@ public class DownloadManager {
     }
 
     /**
-     * TODO
      * 暂停某个下载任务
      *
      * @param missionId 任务ID
      */
-    public void pauseMission(int missionId) {
+    public boolean pauseMission(int missionId) {
+        log.info("尝试开启任务，任务ID为{}", missionId);
+        assertMissionExists(missionId);
+        DownloadMission downloadMission = missionMap.get(missionId);
+        return downloadMission.pause(downloadThreadPool);
     }
 
     /**
@@ -145,7 +151,10 @@ public class DownloadManager {
      */
     public void pauseAll() {
         for (Integer missionId : missionMap.keySet()) {
-            pauseMission(missionId);
+            boolean missionSuccess = pauseMission(missionId);
+            if (!missionSuccess) {
+                //TODO 暂停失败的异常处理
+            }
         }
     }
 

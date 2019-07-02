@@ -21,7 +21,6 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.HeadlessException
 import java.io.File
-import java.util.*
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import javax.swing.*
@@ -166,22 +165,18 @@ constructor() : JFrame() {
     private fun startMissionForUrl(fileUrl: String, downloadManager: DownloadManager, chart: JFreeChart) {
         val targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1)
         val missionId = downloadManager.addMission(fileUrl, "F:\\rocketDownloader", targetFileName)
-        downloadManager.startMission(missionId)
+        downloadManager.startOrResumeMission(missionId)
 
         var second = Second()
         val series = ((chart.plot as XYPlot).dataset as TimeSeriesCollection).series[0] as TimeSeries
 
         val executorService = ScheduledThreadPoolExecutor(1,
                 BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build())
-        executorService.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                logger.info("当前下载百分比为：" + downloadManager.getReadableDownloadedPercent(missionId))
+        executorService.scheduleAtFixedRate({
+            logger.info("当前下载百分比为：" + downloadManager.getReadableDownloadedPercent(missionId))
 
-                series.add(second, downloadManager.totalSpeed)
-                second = second.next() as Second
-
-
-            }
+            series.add(second, downloadManager.totalSpeed)
+            second = second.next() as Second
         }, 0, 1, TimeUnit.SECONDS)
     }
 }
