@@ -102,11 +102,10 @@ public class DownloadManager {
      *
      * @param missionId 任务ID
      */
-    public boolean startOrResumeMission(int missionId) {
+    public boolean startMission(int missionId) {
         log.info("尝试开启任务，任务ID为{}", missionId);
         assertMissionExists(missionId);
-        DownloadMission downloadMission = missionMap.get(missionId);
-        return downloadMission.start(downloadThreadPool);
+        return startOrResumeMission(missionId);
     }
 
     /**
@@ -127,7 +126,7 @@ public class DownloadManager {
      */
     public void startAll() {
         for (Integer missionId : missionMap.keySet()) {
-            boolean missionSuccess = startOrResumeMission(missionId);
+            boolean missionSuccess = startMission(missionId);
             // FIXME 异常处理，暂时将任务加入到一个缓冲队列中，这有啥用？@dagerer
             if (!missionSuccess) {
                 downloadMissionBlockingQueue.offer(missionMap.get(missionId));
@@ -141,7 +140,7 @@ public class DownloadManager {
      * @param missionId 任务ID
      */
     public boolean pauseMission(int missionId) {
-        log.info("尝试开启任务，任务ID为{}", missionId);
+        log.info("尝试暂停任务，任务ID为{}", missionId);
         assertMissionExists(missionId);
         DownloadMission downloadMission = missionMap.get(missionId);
         return downloadMission.pause(downloadThreadPool);
@@ -226,5 +225,16 @@ public class DownloadManager {
         DownloadMission downloadMission = missionMap.get(missionId);
         double percent = 100.0 * downloadMission.getSpeedMonitor().getCurrentSize() / downloadMission.getFileSize();
         return DownloadUtil.getReadablePercent(percent);
+    }
+
+    public boolean startOrResumeMission(int missionId) {
+        DownloadMission downloadMission = missionMap.get(missionId);
+        boolean start;
+        if (downloadMission.getDownloadStatus().getCode() == EnumDownloadStatus.PAUSED.getCode()) {
+            start = downloadMission.resume(downloadThreadPool);
+        } else {
+            start = downloadMission.start(downloadThreadPool);
+        }
+        return start;
     }
 }

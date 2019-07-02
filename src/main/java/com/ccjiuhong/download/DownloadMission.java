@@ -89,6 +89,7 @@ public class DownloadMission {
 //            return false;
 //        }
         assertCurrentMission(downloadThreadPool);
+
         missionMonitor = new MissionMonitor(this);
         speedMonitor = new SpeedMonitor(this);
         // 开启速度监测
@@ -107,26 +108,10 @@ public class DownloadMission {
             downloadThreadPool.submit(downloadRunnable);
             runnableList.add(downloadRunnable);
         }
-
         // 修改任务状态
         EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
         return true;
     }
-
-
-    public boolean pause(DownloadThreadPool downloadThreadPool) {
-        // 校验线程状态
-        assertCurrentMission(downloadThreadPool);
-        // 暂停线程
-        downloadThreadPool.shutdownNow();
-        // 更新配置
-
-        // 校验下载状态
-        EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
-
-
-    }
-
 
     /**
      * 暂停当前任务
@@ -136,9 +121,29 @@ public class DownloadMission {
      */
     public boolean pause(DownloadThreadPool downloadThreadPool) {
         try {
+            assertCurrentMission(downloadThreadPool);
             downloadThreadPool.pause(missionId);
             // 修改任务状态为暂停
-            downloadStatus = EnumDownloadStatus.PAUSED;
+            EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 继续下载
+     *
+     * @param downloadThreadPool 下载的线程池
+     * @return 继续成功返回true，否则返回false
+     */
+    public boolean resume(DownloadThreadPool downloadThreadPool) {
+        try {
+            assertCurrentMission(downloadThreadPool);
+            this.runnableList.forEach(downloadThreadPool::submit);
+            // 修改任务状态
+            EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);

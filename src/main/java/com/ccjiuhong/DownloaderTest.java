@@ -21,7 +21,7 @@ public class DownloaderTest {
         String targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
 //        String targetFileName = "jdk-11.0.3_windows-x64_bin.zip";
         int missionId = downloadManager.addMission(fileUrl, "F:\\rocketDownloader", targetFileName);
-        downloadManager.startOrResumeMission(missionId);
+        downloadManager.startMission(missionId);
 
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
                 new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
