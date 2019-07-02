@@ -165,7 +165,10 @@ public class DownloadManager {
      * @param missionId 任务ID
      */
     public void cancelMission(int missionId) {
-
+        assertMissionExists(missionId);
+        DownloadMission downloadMission = missionMap.get(missionId);
+        missionMap.remove(missionId);
+        downloadMission.delete(downloadThreadPool);
     }
 
     /**
@@ -227,6 +230,12 @@ public class DownloadManager {
         return DownloadUtil.getReadablePercent(percent);
     }
 
+    /**
+     * 开始或继续下载任务
+     *
+     * @param missionId 任务id
+     * @return 执行结果
+     */
     public boolean startOrResumeMission(int missionId) {
         DownloadMission downloadMission = missionMap.get(missionId);
         boolean start;

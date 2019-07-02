@@ -151,6 +151,15 @@ public class DownloadMission {
         }
     }
 
+    public void delete(DownloadThreadPool downloadThreadPool) {
+        try {
+            downloadThreadPool.pause(missionId);
+            this.runnableList.clear();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
     /**
      * 从服务器获取文件大小
      *
@@ -178,6 +187,7 @@ public class DownloadMission {
             throw new IllegalStateException("获取文件大小失败");
         }
     }
+
 
 
 }
