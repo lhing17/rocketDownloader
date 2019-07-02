@@ -1,5 +1,8 @@
 {
   "newTask": "新建下载",
   "inputAddress": "请输入下载地址",
-  "configCenter": "配置中心"
+  "configCenter": "配置中心",
+  "task": "功能",
+  "time": "时间",
+  "speed": "下载速度"
 }

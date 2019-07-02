@@ -1,5 +1,8 @@
 {
   "newTask": "new task",
   "inputAddress": "input target url",
-  "configCenter": "config center"
+  "configCenter": "config center",
+  "task": "task",
+  "time": "time",
+  "speed": "speed"
 }

@@ -51,6 +51,15 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- jfreechart，用于绘制折线图的swing插件-->
+        <!-- https://mvnrepository.com/artifac/org.jfree/jfreechart -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+
+
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
         <!-- apache的commons-lang包，补充一些常用的工具 -->
         <dependency>
