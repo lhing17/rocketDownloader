@@ -67,6 +67,15 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.8.1</version>
         </dependency>
+
+        <!-- apache的commons-codec包，用于简单的加密解密-->
+        <!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.12</version>
+        </dependency>
+
         <!-- kotlin，用于简化GUI相关代码 -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
