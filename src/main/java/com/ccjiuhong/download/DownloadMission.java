@@ -109,7 +109,7 @@ public class DownloadMission {
             runnableList.add(downloadRunnable);
         }
         // 修改任务状态
-        EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
+        downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
         return true;
     }
 
@@ -124,7 +124,7 @@ public class DownloadMission {
             assertCurrentMission(downloadThreadPool);
             downloadThreadPool.pause(missionId);
             // 修改任务状态为暂停
-            EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
+            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -143,7 +143,8 @@ public class DownloadMission {
             assertCurrentMission(downloadThreadPool);
             this.runnableList.forEach(downloadThreadPool::submit);
             // 修改任务状态
-            EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
+            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
+                    EnumDownloadStatus.DOWNLOADING);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -151,12 +152,20 @@ public class DownloadMission {
         }
     }
 
-    public void delete(DownloadThreadPool downloadThreadPool) {
+    /**
+     * 删除当前下载任务
+     *
+     * @param downloadThreadPool 下载的线程池
+     * @return 删除成功返回true，否则返回false
+     */
+    public boolean delete(DownloadThreadPool downloadThreadPool) {
         try {
-            downloadThreadPool.pause(missionId);
+            downloadThreadPool.cancel(missionId);
             this.runnableList.clear();
+            return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            return false;
         }
     }
 
@@ -187,7 +196,6 @@ public class DownloadMission {
             throw new IllegalStateException("获取文件大小失败");
         }
     }
-
 
 
 }
