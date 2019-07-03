@@ -97,8 +97,6 @@ public class DownloadRunnable implements Runnable {
 
     @Override
     public void run() {
-
-
         File targetFile = createTargetFile();
         BufferedInputStream bufferedInputStream;
         RandomAccessFile randomAccessFile;

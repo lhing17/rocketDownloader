@@ -1,16 +1,23 @@
 package com.ccjiuhong.download;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.monitor.MissionMonitor;
 import com.ccjiuhong.monitor.SpeedMonitor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -110,6 +117,9 @@ public class DownloadMission {
         }
         // 修改任务状态
         EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
+
+        // 存储下载信息
+        saveOrUpdateDownloadInfo(runnableList);
         return true;
     }
 
@@ -125,6 +135,8 @@ public class DownloadMission {
             downloadThreadPool.pause(missionId);
             // 修改任务状态为暂停
             EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
+            // 存储下载信息
+            saveOrUpdateDownloadInfo(runnableList);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -151,12 +163,53 @@ public class DownloadMission {
         }
     }
 
+    /**
+     * 删除任务
+     *
+     * @param downloadThreadPool 下载的线程池
+     */
     public void delete(DownloadThreadPool downloadThreadPool) {
         try {
             downloadThreadPool.pause(missionId);
             this.runnableList.clear();
+            File file = new File("/" + missionId + "-download.json");
+            if (!file.delete()) {
+                log.warn("删除文件失败");
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 存储下载信息
+     *
+     * @param runnableList 下载信息集合
+     */
+    public void saveOrUpdateDownloadInfo(List<DownloadRunnable> runnableList) {
+        if (runnableList.size() <= 0) {
+            throw new IllegalStateException("当前没有下载任务");
+        }
+        File file = new File("/" + missionId + "-download.json");
+        try (FileOutputStream fileOutputStream = new FileOutputStream(file.getPath())) {
+            if (!file.exists()) {
+                boolean newFile = file.createNewFile();
+                if (!newFile) {
+                    throw new IllegalStateException("创建信息文件失败");
+                }
+            }
+            Map<Integer, Object> param = new HashMap<>(2);
+            param.put(missionId, runnableList);
+            byte[] bytes = JSONObject.toJSONBytes(param);
+            fileOutputStream.write(0);
+            fileOutputStream.flush();
+            FileChannel fc = fileOutputStream.getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            buffer.put(bytes);
+            buffer.flip();
+            fc.write(buffer);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -177,6 +230,11 @@ public class DownloadMission {
         }
     }
 
+    /**
+     * 校验当前任务
+     *
+     * @param downloadThreadPool 任务线程池
+     */
     private void assertCurrentMission(DownloadThreadPool downloadThreadPool) {
         // 线程池已停止
         if (downloadThreadPool.isTerminated()) {
@@ -187,7 +245,6 @@ public class DownloadMission {
             throw new IllegalStateException("获取文件大小失败");
         }
     }
-
 
 
 }
