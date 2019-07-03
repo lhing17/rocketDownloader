@@ -1,6 +1,5 @@
 package com.ccjiuhong.download;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.monitor.MissionMonitor;
 import com.ccjiuhong.monitor.SpeedMonitor;
@@ -12,12 +11,9 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -92,12 +88,10 @@ public class DownloadMission {
      */
     public boolean start(DownloadThreadPool downloadThreadPool) {
         assertMissionStateCorrect(downloadThreadPool);
-
         missionMonitor = new MissionMonitor(this);
         speedMonitor = new SpeedMonitor(this);
         // 开启速度监测
         executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
-
         // 开启线程任务执行
         for (int i = 0; i < MAX_THREAD_PER_MISSION; i++) {
             long start = i * (fileSize / MAX_THREAD_PER_MISSION);
@@ -112,9 +106,9 @@ public class DownloadMission {
             runnableList.add(downloadRunnable);
         }
         // 修改任务状态
+        downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
         // 存储下载信息
         saveOrUpdateDownloadInfo(runnableList);
-        downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
         return true;
     }
 
@@ -148,7 +142,7 @@ public class DownloadMission {
     public boolean resume(DownloadThreadPool downloadThreadPool) {
         try {
             assertMissionStateCorrect(downloadThreadPool);
-            this.runnableList.forEach(downloadThreadPool::submit);
+            resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
             downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
                     EnumDownloadStatus.DOWNLOADING);
@@ -160,12 +154,57 @@ public class DownloadMission {
     }
 
     /**
+     * 继续下载任务
+     *
+     * @param downloadThreadPool 任务连接池
+     */
+    private void resumeDownloadMission(DownloadThreadPool downloadThreadPool) {
+        if (readDownloadInfo()) {
+            this.runnableList.forEach(downloadThreadPool::submit);
+        } else {
+            throw new IllegalStateException("任务无法继续，请检查下载信息文件");
+        }
+    }
+
+    /**
+     * 读取下载信息文件
+     *
+     * @return 读取结果
+     */
+    private boolean readDownloadInfo() {
+        File file = new File("/" + missionId + "-download.json");
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            FileChannel fc = fileInputStream.getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            fc.read(buffer);
+            buffer.flip();
+            StringBuilder sb = new StringBuilder();
+            while (buffer.hasRemaining()) {
+                // 读取buffer当前位置的整数
+                byte b = buffer.get();
+                sb.append(b);
+            }
+            String downloadInfoJsonStr = sb.toString();
+            this.runnableList.clear();
+            log.info("read download json : {}", downloadInfoJsonStr);
+            List<DownloadRunnable> downloadRunnableList = JSONObject.parseArray(downloadInfoJsonStr, DownloadRunnable.class);
+            log.info("confirm download json : {}", downloadRunnableList);
+            this.runnableList.addAll(downloadRunnableList);
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("读取文件失败, read error is : {}", e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * 删除当前下载任务
      *
      * @param downloadThreadPool 下载的线程池
      * @return 删除成功返回true，否则返回false
      */
-    public void delete(DownloadThreadPool downloadThreadPool) {
+    public boolean delete(DownloadThreadPool downloadThreadPool) {
         try {
             downloadThreadPool.cancel(missionId);
             this.runnableList.clear();
@@ -190,16 +229,14 @@ public class DownloadMission {
             throw new IllegalStateException("当前没有下载任务");
         }
         File file = new File("/" + missionId + "-download.json");
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file.getPath())) {
+        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             if (!file.exists()) {
                 boolean newFile = file.createNewFile();
                 if (!newFile) {
                     throw new IllegalStateException("创建信息文件失败");
                 }
             }
-            Map<Integer, Object> param = new HashMap<>(2);
-            param.put(missionId, runnableList);
-            byte[] bytes = JSONObject.toJSONBytes(param);
+            byte[] bytes = JSONObject.toJSONBytes(runnableList);
             fileOutputStream.write(0);
             fileOutputStream.flush();
             FileChannel fc = fileOutputStream.getChannel();
@@ -209,6 +246,7 @@ public class DownloadMission {
             fc.write(buffer);
         } catch (IOException e) {
             e.printStackTrace();
+            log.error("存储\\更新下载信息文件失败");
         }
     }
 
