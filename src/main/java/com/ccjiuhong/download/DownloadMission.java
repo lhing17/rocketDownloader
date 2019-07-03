@@ -91,11 +91,7 @@ public class DownloadMission {
      * @return 开启成功返回true，否则返回false
      */
     public boolean start(DownloadThreadPool downloadThreadPool) {
-        // 线程池没有可用线程
-//        if (downloadThreadPool.getPoolSize() == 0) {
-//            return false;
-//        }
-        assertCurrentMission(downloadThreadPool);
+        assertMissionStateCorrect(downloadThreadPool);
 
         missionMonitor = new MissionMonitor(this);
         speedMonitor = new SpeedMonitor(this);
@@ -116,10 +112,9 @@ public class DownloadMission {
             runnableList.add(downloadRunnable);
         }
         // 修改任务状态
-        EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
-
         // 存储下载信息
         saveOrUpdateDownloadInfo(runnableList);
+        downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
         return true;
     }
 
@@ -131,10 +126,10 @@ public class DownloadMission {
      */
     public boolean pause(DownloadThreadPool downloadThreadPool) {
         try {
-            assertCurrentMission(downloadThreadPool);
+            assertMissionStateCorrect(downloadThreadPool);
             downloadThreadPool.pause(missionId);
             // 修改任务状态为暂停
-            EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
+            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
             // 存储下载信息
             saveOrUpdateDownloadInfo(runnableList);
             return true;
@@ -152,10 +147,11 @@ public class DownloadMission {
      */
     public boolean resume(DownloadThreadPool downloadThreadPool) {
         try {
-            assertCurrentMission(downloadThreadPool);
+            assertMissionStateCorrect(downloadThreadPool);
             this.runnableList.forEach(downloadThreadPool::submit);
             // 修改任务状态
-            EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
+            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
+                    EnumDownloadStatus.DOWNLOADING);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -164,20 +160,23 @@ public class DownloadMission {
     }
 
     /**
-     * 删除任务
+     * 删除当前下载任务
      *
      * @param downloadThreadPool 下载的线程池
+     * @return 删除成功返回true，否则返回false
      */
     public void delete(DownloadThreadPool downloadThreadPool) {
         try {
-            downloadThreadPool.pause(missionId);
+            downloadThreadPool.cancel(missionId);
             this.runnableList.clear();
             File file = new File("/" + missionId + "-download.json");
             if (!file.delete()) {
                 log.warn("删除文件失败");
             }
+            return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            return false;
         }
     }
 
@@ -231,11 +230,11 @@ public class DownloadMission {
     }
 
     /**
-     * 校验当前任务
+     * 调用此方法确保任务的状态是正确的
      *
-     * @param downloadThreadPool 任务线程池
+     * @param downloadThreadPool 下载任务使用的线程池
      */
-    private void assertCurrentMission(DownloadThreadPool downloadThreadPool) {
+    private void assertMissionStateCorrect(DownloadThreadPool downloadThreadPool) {
         // 线程池已停止
         if (downloadThreadPool.isTerminated()) {
             throw new IllegalStateException("线程池已停止");

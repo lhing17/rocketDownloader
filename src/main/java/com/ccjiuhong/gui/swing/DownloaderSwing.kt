@@ -24,6 +24,7 @@ import java.io.File
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import javax.swing.*
+import javax.swing.JOptionPane.WARNING_MESSAGE
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
@@ -35,11 +36,12 @@ import javax.swing.event.DocumentListener
  * @date 2019/06/30
  */
 // 读取配置文件
-val jsonConfig: JSONObject = JSONObject.parseObject(File("config/config.json").readText())
+val configFile = File("config/config.json")
+var jsonConfig: JSONObject = JSONObject.parseObject(configFile.readText())
 
 // 读取语言包配置
-val lang = jsonConfig["language"]
-val languageConfig: JSONObject = JSONObject.parseObject(File("config/i18n/$lang.json").readText())
+var lang = jsonConfig["language"]
+var languageConfig: JSONObject = JSONObject.parseObject(File("config/i18n/$lang.json").readText())
 
 class DownloaderSwing @Throws(HeadlessException::class)
 constructor() : JFrame() {
@@ -109,15 +111,14 @@ constructor() : JFrame() {
         val item1 = JMenuItem(languageConfig["configCenter"] as String?)
         jMenu.add(item1)
         item1.addActionListener {
-            val file = File("config/config.json")
-            val s = file.readText()
+            val s = configFile.readText()
             val frame = JDialog(this, languageConfig["configCenter"] as String?, true)
             frame.setSize(600, 480)
             frame.defaultCloseOperation = DISPOSE_ON_CLOSE
 
             val configText = JTextArea(s)
             configText.font = Font("Microsoft YaHei", Font.PLAIN, 16)
-            configText.document.addDocumentListener(object : DocumentListener{
+            configText.document.addDocumentListener(object : DocumentListener {
                 override fun changedUpdate(e: DocumentEvent?) {
                     println("changed")
                 }
@@ -134,7 +135,31 @@ constructor() : JFrame() {
 
             frame.contentPane.add(configText)
 
-            //            frame.pack()
+            val jMenuBar = JMenuBar()
+            frame.jMenuBar = jMenuBar
+
+            val menu = JMenu("file")
+            jMenuBar.add(menu)
+
+            val saveItem = JMenuItem("save")
+            menu.add(saveItem)
+            saveItem.addActionListener {
+                try {
+                    JSONObject.parseObject(configText.text)
+                    configFile.writeText(configText.text)
+                    jsonConfig = JSONObject.parseObject(configFile.readText())
+
+                    // 读取语言包配置
+                    lang = jsonConfig["language"]
+                    languageConfig= JSONObject.parseObject(File("config/i18n/$lang.json").readText())
+                    revalidate()
+                    //repaint()
+                } catch (e: Exception) {
+                    logger.error("当前内容不是正确的json，无法保存", e)
+                    JOptionPane.showMessageDialog(null, "当前内容不是正确的json，无法保存", "警告", WARNING_MESSAGE);
+                }
+            }
+
             frame.isVisible = true
 
         }

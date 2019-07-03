@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.*;
 
 /**
  * 下载管理器，封装了所有下载需要用到的方法，是GUI访问逻辑代码的唯一入口类。
@@ -159,16 +158,15 @@ public class DownloadManager {
     }
 
     /**
-     * TODO
      * 取消某个下载任务
      *
      * @param missionId 任务ID
      */
-    public void cancelMission(int missionId) {
+    public boolean cancelMission(int missionId) {
         assertMissionExists(missionId);
         DownloadMission downloadMission = missionMap.get(missionId);
         missionMap.remove(missionId);
-        downloadMission.delete(downloadThreadPool);
+        return downloadMission.delete(downloadThreadPool);
     }
 
     /**
@@ -176,7 +174,10 @@ public class DownloadManager {
      */
     public void cancelAll() {
         for (Integer missionId : missionMap.keySet()) {
-            cancelMission(missionId);
+            boolean missionSuccess = cancelMission(missionId);
+            if (!missionSuccess) {
+                //TODO 取消失败的异常处理
+            }
         }
     }
 

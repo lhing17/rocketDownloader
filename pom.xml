@@ -13,6 +13,7 @@
         <kotlin.version>1.3.40</kotlin.version>
         <log4j.version>2.9.1</log4j.version>
         <fastjson.version>1.2.58</fastjson.version>
+        <javafx.version>11.0.2</javafx.version>
     </properties>
 
 
@@ -75,6 +76,28 @@
             <artifactId>commons-codec</artifactId>
             <version>1.12</version>
         </dependency>
+
+        <!-- javafx，用于实现GUI-->
+        <!-- https://mvnrepository.com/artifact/org.openjfx/javafx-controls -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- tornadofx，kotlin的javafx框架 -->
+        <!-- https://mvnrepository.com/artifact/no.tornado/tornadofx -->
+        <dependency>
+            <groupId>no.tornado</groupId>
+            <artifactId>tornadofx</artifactId>
+            <version>1.7.17</version>
+        </dependency>
+
 
         <!-- kotlin，用于简化GUI相关代码 -->
         <dependency>

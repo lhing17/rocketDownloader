@@ -48,6 +48,18 @@ public class DownloadThreadPool extends ThreadPoolExecutor {
         }
     }
 
+    /**
+     * 通过线程池取消任务
+     * @param missionId 任务ID
+     */
+    public void cancel(int missionId) {
+        for (Future<?> future : futureMap.get(missionId)) {
+            runnableMap.remove(future);
+            future.cancel(true);
+        }
+        futureMap.remove(missionId);
+    }
+
     @NotNull
     @Override
     public Future<?> submit(Runnable task) {
