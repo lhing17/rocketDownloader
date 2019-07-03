@@ -95,19 +95,6 @@ public class DownloadManager {
     }
 
     /**
-     * 开始某个下载任务
-     * <p>如果任务已存在，从进度文件中获取进度，并继续下载</p>
-     * TODO 从进度文件读取的逻辑还没有实现
-     *
-     * @param missionId 任务ID
-     */
-    public boolean startMission(int missionId) {
-        log.info("尝试开启任务，任务ID为{}", missionId);
-        assertMissionExists(missionId);
-        return startOrResumeMission(missionId);
-    }
-
-    /**
      * 确保任务存在，如果不存在，抛出异常，以实现快速失败
      *
      * @param missionId 任务ID
@@ -121,11 +108,31 @@ public class DownloadManager {
     }
 
     /**
+     * 开始或继续下载任务
+     * <p>如果任务已存在，从进度文件中获取进度，并继续下载</p>
+     *
+     * @param missionId 任务id
+     * @return 执行结果
+     */
+    public boolean startOrResumeMission(int missionId) {
+        log.info("尝试开启任务，任务ID为{}", missionId);
+        assertMissionExists(missionId);
+        DownloadMission downloadMission = missionMap.get(missionId);
+        boolean start;
+        if (downloadMission.getDownloadStatus() == EnumDownloadStatus.PAUSED) {
+            start = downloadMission.resume(downloadThreadPool);
+        } else {
+            start = downloadMission.start(downloadThreadPool);
+        }
+        return start;
+    }
+
+    /**
      * 开始所有下载任务
      */
-    public void startAll() {
+    public void startOrResumeAll() {
         for (Integer missionId : missionMap.keySet()) {
-            boolean missionSuccess = startMission(missionId);
+            boolean missionSuccess = startOrResumeMission(missionId);
             // FIXME 异常处理，暂时将任务加入到一个缓冲队列中，这有啥用？@dagerer
             if (!missionSuccess) {
                 downloadMissionBlockingQueue.offer(missionMap.get(missionId));
@@ -231,20 +238,5 @@ public class DownloadManager {
         return DownloadUtil.getReadablePercent(percent);
     }
 
-    /**
-     * 开始或继续下载任务
-     *
-     * @param missionId 任务id
-     * @return 执行结果
-     */
-    public boolean startOrResumeMission(int missionId) {
-        DownloadMission downloadMission = missionMap.get(missionId);
-        boolean start;
-        if (downloadMission.getDownloadStatus().getCode() == EnumDownloadStatus.PAUSED.getCode()) {
-            start = downloadMission.resume(downloadThreadPool);
-        } else {
-            start = downloadMission.start(downloadThreadPool);
-        }
-        return start;
-    }
+
 }

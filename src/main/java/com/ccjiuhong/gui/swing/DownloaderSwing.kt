@@ -217,7 +217,7 @@ constructor() : JFrame() {
     private fun startMissionForUrl(fileUrl: String, downloadManager: DownloadManager, chart: JFreeChart) {
         val targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1)
         val missionId = downloadManager.addMission(fileUrl, "F:\\rocketDownloader", targetFileName)
-        downloadManager.startMission(missionId)
+        downloadManager.startOrResumeMission(missionId)
 
         var second = Second()
         val series = ((chart.plot as XYPlot).dataset as TimeSeriesCollection).series[0] as TimeSeries

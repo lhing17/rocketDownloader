@@ -237,8 +237,6 @@ public class DownloadMission {
                 }
             }
             byte[] bytes = JSONObject.toJSONBytes(runnableList);
-            fileOutputStream.write(0);
-            fileOutputStream.flush();
             FileChannel fc = fileOutputStream.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(1024);
             buffer.put(bytes);
