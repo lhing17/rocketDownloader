@@ -3,6 +3,7 @@ package com.ccjiuhong.download;
 import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.monitor.MissionMonitor;
 import com.ccjiuhong.monitor.SpeedMonitor;
+import com.ccjiuhong.util.Tested;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -224,6 +225,7 @@ public class DownloadMission {
      *
      * @param runnableList 下载信息集合
      */
+    @Tested(passed = true)
     public void saveOrUpdateDownloadInfo(List<DownloadRunnable> runnableList) {
         if (runnableList.size() <= 0) {
             throw new IllegalStateException("当前没有下载任务");
