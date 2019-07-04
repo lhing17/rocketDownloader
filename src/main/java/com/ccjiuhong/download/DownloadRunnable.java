@@ -4,12 +4,16 @@ import com.ccjiuhong.monitor.MissionMonitor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URL;
 import java.net.URLConnection;
+
+import static com.ccjiuhong.util.SslUtil.DO_NOT_VERIFY;
+import static com.ccjiuhong.util.SslUtil.trustAllHosts;
 
 /**
  * @author G. Seinfeld
@@ -106,9 +110,17 @@ public class DownloadRunnable implements Runnable {
             URL url = new URL(fileUrl);
             urlConnection = url.openConnection();
             urlConnection.setRequestProperty("Range", "bytes=" + currentPosition + "-" + endPosition);
+            boolean useHttps = fileUrl.startsWith("https");
+            if (useHttps) {
+                HttpsURLConnection https = (HttpsURLConnection) urlConnection;
+                trustAllHosts(https);
+                https.setHostnameVerifier(DO_NOT_VERIFY);
+                bufferedInputStream = new BufferedInputStream(https.getInputStream());
+            } else{
+                bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
+            }
             randomAccessFile = new RandomAccessFile(targetFile, "rw");
             randomAccessFile.seek(currentPosition);
-            bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
             while (currentPosition < endPosition) {
                 if (Thread.currentThread().isInterrupted()) {
                     break;

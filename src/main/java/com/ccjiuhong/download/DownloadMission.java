@@ -8,7 +8,11 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import java.io.*;
+import javax.net.ssl.HttpsURLConnection;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
@@ -18,6 +22,9 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static com.ccjiuhong.util.SslUtil.DO_NOT_VERIFY;
+import static com.ccjiuhong.util.SslUtil.trustAllHosts;
 
 /**
  * 指一个下载任务的对象，一个下载任务可以由多个线程组成
@@ -259,6 +266,13 @@ public class DownloadMission {
         try {
             URL url = new URL(fileUrl);
             URLConnection urlConnection = url.openConnection();
+            boolean useHttps = fileUrl.startsWith("https");
+            if (useHttps) {
+                HttpsURLConnection https = (HttpsURLConnection) urlConnection;
+                trustAllHosts(https);
+                https.setHostnameVerifier(DO_NOT_VERIFY);
+                return https.getContentLengthLong();
+            }
             return urlConnection.getContentLengthLong();
         } catch (IOException e) {
             log.error("从服务器获取文件大小失败", e);
