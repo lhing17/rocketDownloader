@@ -188,15 +188,15 @@ public class DownloadMission {
             String downloadInfoJsonStr = sb.toString();
             this.runnableList.clear();
             log.info("read download json : {}", downloadInfoJsonStr);
-            List<DownloadRunnable> downloadRunnableList = JSONObject.parseArray(downloadInfoJsonStr, DownloadRunnable.class);
+            List<DownloadRunnable> downloadRunnableList = JSONObject.parseArray(downloadInfoJsonStr,
+                    DownloadRunnable.class);
             log.info("confirm download json : {}", downloadRunnableList);
             this.runnableList.addAll(downloadRunnableList);
+            return true;
         } catch (IOException e) {
-            e.printStackTrace();
-            log.error("读取文件失败, read error is : {}", e.getMessage());
+            log.error("读取文件失败, read error is " + e.getMessage(), e);
             return false;
         }
-        return true;
     }
 
     /**
@@ -225,7 +225,7 @@ public class DownloadMission {
      *
      * @param runnableList 下载信息集合
      */
-    @Tested(passed = true)
+    @Tested(passed = false)
     public void saveOrUpdateDownloadInfo(List<DownloadRunnable> runnableList) {
         if (runnableList.size() <= 0) {
             throw new IllegalStateException("当前没有下载任务");
@@ -245,8 +245,7 @@ public class DownloadMission {
             buffer.flip();
             fc.write(buffer);
         } catch (IOException e) {
-            e.printStackTrace();
-            log.error("存储\\更新下载信息文件失败");
+            log.error("存储更新下载信息文件失败", e);
         }
     }
 
