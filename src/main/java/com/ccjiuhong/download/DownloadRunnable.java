@@ -110,13 +110,14 @@ public class DownloadRunnable implements Runnable {
             URL url = new URL(fileUrl);
             urlConnection = url.openConnection();
             urlConnection.setRequestProperty("Range", "bytes=" + currentPosition + "-" + endPosition);
+            // TODO 将不校验SSL证书作为一个配置项
             boolean useHttps = fileUrl.startsWith("https");
             if (useHttps) {
                 HttpsURLConnection https = (HttpsURLConnection) urlConnection;
                 trustAllHosts(https);
                 https.setHostnameVerifier(DO_NOT_VERIFY);
                 bufferedInputStream = new BufferedInputStream(https.getInputStream());
-            } else{
+            } else {
                 bufferedInputStream = new BufferedInputStream(urlConnection.getInputStream());
             }
             randomAccessFile = new RandomAccessFile(targetFile, "rw");
