@@ -7,6 +7,9 @@ import java.text.DecimalFormat;
  * @date 2019/06/29
  */
 public class DownloadUtil {
+    private static final String FILE_KEY = "rocket";
+    public static String getName(String prefix,String suffix) { return getPath() + prefix + FILE_KEY + suffix; }
+    public static String getPath() { return "/"; }
     public static String getReadableSize(long bytes, boolean si) {
         int unit = si ? 1000 : 1024;
         if (bytes < unit) {

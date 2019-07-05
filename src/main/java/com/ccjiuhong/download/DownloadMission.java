@@ -3,6 +3,7 @@ package com.ccjiuhong.download;
 import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.monitor.MissionMonitor;
 import com.ccjiuhong.monitor.SpeedMonitor;
+import com.ccjiuhong.util.DownloadUtil;
 import com.ccjiuhong.util.Tested;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -80,6 +85,8 @@ public class DownloadMission {
      * 一个下载任务分配的最大线程数
      */
     private static final int MAX_THREAD_PER_MISSION = 5;
+
+    private static final int MAX_DEFAULT_BYTE_SIZE = 10000;
 
     public DownloadMission(int missionId, String fileUrl, String targetDirectory, String targetFileName) {
         this.missionId = missionId;
@@ -152,8 +159,7 @@ public class DownloadMission {
             assertMissionStateCorrect(downloadThreadPool);
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
-            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
-                    EnumDownloadStatus.DOWNLOADING);
+            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -180,25 +186,24 @@ public class DownloadMission {
      * @return 读取结果
      */
     private boolean readDownloadInfo() {
-        File file = new File("/" + missionId + "-download.json");
+        File file = new File(DownloadUtil.getName(String.valueOf(missionId), "dl.json"));
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
             FileChannel fc = fileInputStream.getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_DEFAULT_BYTE_SIZE);
             fc.read(buffer);
             buffer.flip();
             StringBuilder sb = new StringBuilder();
-            while (buffer.hasRemaining()) {
+            CharBuffer charBuffer = buffer.asCharBuffer();
+            while (charBuffer.hasRemaining()) {
                 // 读取buffer当前位置的整数
-                byte b = buffer.get();
+                char b = charBuffer.get();
                 sb.append(b);
             }
             String downloadInfoJsonStr = sb.toString();
             this.runnableList.clear();
-            log.info("read download json : {}", downloadInfoJsonStr);
-            List<DownloadRunnable> downloadRunnableList = JSONObject.parseArray(downloadInfoJsonStr,
-                    DownloadRunnable.class);
-            log.info("confirm download json : {}", downloadRunnableList);
-            this.runnableList.addAll(downloadRunnableList);
+            // TODO creat download info dto to remove circular dependencies
+            List<DownloadRunnable> runnableList = JSONObject.parseArray(downloadInfoJsonStr, DownloadRunnable.class);
+            this.runnableList.addAll(runnableList);
             return true;
         } catch (IOException e) {
             log.error("读取文件失败, read error is " + e.getMessage(), e);
@@ -216,7 +221,7 @@ public class DownloadMission {
         try {
             downloadThreadPool.cancel(missionId);
             this.runnableList.clear();
-            File file = new File("/" + missionId + "-download.json");
+            File file = new File(DownloadUtil.getName(String.valueOf(missionId), "dl.json"));
             if (!file.delete()) {
                 log.warn("删除文件失败");
             }
@@ -232,12 +237,12 @@ public class DownloadMission {
      *
      * @param runnableList 下载信息集合
      */
-    @Tested(passed = false)
+    @Tested()
     public void saveOrUpdateDownloadInfo(List<DownloadRunnable> runnableList) {
         if (runnableList.size() <= 0) {
             throw new IllegalStateException("当前没有下载任务");
         }
-        File file = new File("/" + missionId + "-download.json");
+        File file = new File(DownloadUtil.getName(String.valueOf(missionId), "dl.json"));
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             if (!file.exists()) {
                 boolean newFile = file.createNewFile();
@@ -245,9 +250,10 @@ public class DownloadMission {
                     throw new IllegalStateException("创建信息文件失败");
                 }
             }
-            byte[] bytes = JSONObject.toJSONBytes(runnableList);
+            byte[] bytes = JSONObject.toJSONString(runnableList).getBytes(StandardCharsets.UTF_16BE);
             FileChannel fc = fileOutputStream.getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
             buffer.put(bytes);
             buffer.flip();
             fc.write(buffer);
