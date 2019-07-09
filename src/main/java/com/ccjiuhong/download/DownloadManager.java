@@ -4,13 +4,15 @@ import com.ccjiuhong.util.DownloadUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 下载管理器，封装了所有下载需要用到的方法，是GUI访问逻辑代码的唯一入口类。
+ * 下载管理器，封装了所有下载需要用到的方法，同时也是GUI访问逻辑代码的唯一入口类。
  *
  * <p>
  * 此类的构造使用单例模式，因为全局仅需要一个下载管理器的对象，对所有下载相关的功能进行统一处理。
@@ -34,6 +36,11 @@ public class DownloadManager {
      * 缓存所有的下载任务，这里的key是任务的ID
      */
     private static Map<Integer, DownloadMission> missionMap = new HashMap<>();
+
+    /**
+     * 缓存下载地址的集合，保证下载地址不重复
+     */
+    private static Set<String> missionUrls = new HashSet<>();
 
     private static final int MAX_WORK_NUM = 10;
 
@@ -75,9 +82,13 @@ public class DownloadManager {
      * @param fileUrl         文件地址
      * @param targetDirectory 目标文件夹
      * @param targetFileName  目标文件名
-     * @return 任务ID
+     * @return 任务重复时返回-1，添加成功返回任务ID
      */
     public int addMission(String fileUrl, String targetDirectory, String targetFileName) {
+        if (missionUrls.contains(fileUrl)) {
+            log.warn("下载任务{}已存在", fileUrl);
+            return -1;
+        }
         log.info("增加了下载任务，文件地址为：{}，目标目录为{}，目标文件名为：{}", fileUrl, targetDirectory, targetFileName);
         DownloadMission downloadMission = new DownloadMission(serialMissionId++, fileUrl, targetDirectory,
                 targetFileName);
@@ -92,10 +103,11 @@ public class DownloadManager {
      */
     private void addMission(DownloadMission downloadMission) {
         missionMap.put(downloadMission.getMissionId(), downloadMission);
+        missionUrls.add(downloadMission.getFileUrl());
     }
 
     /**
-     * 确保任务存在，如果不存在，抛出异常，以实现快速失败
+     * 确保任务存在，如果不存在，抛出异常，以实现快速失败（fail-fast）
      *
      * @param missionId 任务ID
      */
@@ -118,13 +130,13 @@ public class DownloadManager {
         log.info("尝试开启任务，任务ID为{}", missionId);
         assertMissionExists(missionId);
         DownloadMission downloadMission = missionMap.get(missionId);
-        boolean start;
+        boolean success;
         if (downloadMission.getDownloadStatus() == EnumDownloadStatus.PAUSED) {
-            start = downloadMission.resume(downloadThreadPool);
+            success = downloadMission.resume(downloadThreadPool);
         } else {
-            start = downloadMission.start(downloadThreadPool);
+            success = downloadMission.start(downloadThreadPool);
         }
-        return start;
+        return success;
     }
 
     /**

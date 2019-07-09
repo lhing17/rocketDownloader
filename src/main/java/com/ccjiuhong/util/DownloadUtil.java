@@ -1,5 +1,6 @@
 package com.ccjiuhong.util;
 
+import java.io.File;
 import java.text.DecimalFormat;
 
 /**
@@ -8,8 +9,15 @@ import java.text.DecimalFormat;
  */
 public class DownloadUtil {
     private static final String FILE_KEY = "rocket";
-    public static String getName(String prefix,String suffix) { return getPath() + prefix + FILE_KEY + suffix; }
-    public static String getPath() { return "/"; }
+
+    public static String getName(String targetDirectory, String prefix, String suffix) {
+        return getPath(targetDirectory) + prefix + FILE_KEY + suffix;
+    }
+
+    public static String getPath(String targetDirectory) {
+        return targetDirectory + File.separator;
+    }
+
     public static String getReadableSize(long bytes, boolean si) {
         int unit = si ? 1000 : 1024;
         if (bytes < unit) {
@@ -25,7 +33,7 @@ public class DownloadUtil {
         if (bytes <= 0) {
             return "0";
         }
-        final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+        final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
         return new DecimalFormat("#,##0.#").format(bytes
                 / Math.pow(1024, digitGroups))

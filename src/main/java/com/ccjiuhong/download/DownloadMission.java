@@ -1,6 +1,7 @@
 package com.ccjiuhong.download;
 
 import com.alibaba.fastjson.JSONObject;
+import com.ccjiuhong.monitor.AutoSaver;
 import com.ccjiuhong.monitor.MissionMonitor;
 import com.ccjiuhong.monitor.SpeedMonitor;
 import com.ccjiuhong.util.DownloadUtil;
@@ -20,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +69,10 @@ public class DownloadMission {
      */
     private SpeedMonitor speedMonitor;
     /**
+     * 自动保存器，用于自动保存下载进度
+     */
+    private AutoSaver autoSaver;
+    /**
      * 下载线程列表
      */
     private List<DownloadRunnable> runnableList = new ArrayList<>();
@@ -105,14 +109,17 @@ public class DownloadMission {
         assertMissionStateCorrect(downloadThreadPool);
         missionMonitor = new MissionMonitor(this);
         speedMonitor = new SpeedMonitor(this);
+        autoSaver = new AutoSaver(this);
         // 开启速度监测
         executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
+        // 开启自动保存进度
+        executorService.scheduleAtFixedRate(autoSaver, 0, 5, TimeUnit.SECONDS);
         // 开启线程任务执行
         for (int i = 0; i < MAX_THREAD_PER_MISSION; i++) {
             long start = i * (fileSize / MAX_THREAD_PER_MISSION);
             long end = (i == MAX_THREAD_PER_MISSION - 1)
-                    ? fileSize - 1
-                    : (i + 1) * (fileSize / MAX_THREAD_PER_MISSION) - 1;
+                    ? fileSize
+                    : (i + 1) * (fileSize / MAX_THREAD_PER_MISSION) ;
             DownloadRunnable downloadRunnable =
                     new DownloadRunnable(targetDirectory, targetFileName, fileUrl, missionMonitor, start, end);
 
@@ -159,7 +166,8 @@ public class DownloadMission {
             assertMissionStateCorrect(downloadThreadPool);
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
-            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
+            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
+                    EnumDownloadStatus.DOWNLOADING);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -186,7 +194,7 @@ public class DownloadMission {
      * @return 读取结果
      */
     private boolean readDownloadInfo() {
-        File file = new File(DownloadUtil.getName(String.valueOf(missionId), "dl.json"));
+        File file = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId), "dl.json"));
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
             FileChannel fc = fileInputStream.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(MAX_DEFAULT_BYTE_SIZE);
@@ -221,7 +229,7 @@ public class DownloadMission {
         try {
             downloadThreadPool.cancel(missionId);
             this.runnableList.clear();
-            File file = new File(DownloadUtil.getName(String.valueOf(missionId), "dl.json"));
+            File file = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId), "dl.json"));
             if (!file.delete()) {
                 log.warn("删除文件失败");
             }
@@ -242,7 +250,7 @@ public class DownloadMission {
         if (runnableList.size() <= 0) {
             throw new IllegalStateException("当前没有下载任务");
         }
-        File file = new File(DownloadUtil.getName(String.valueOf(missionId), "dl.json"));
+        File file = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId), "dl.json"));
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             if (!file.exists()) {
                 boolean newFile = file.createNewFile();
@@ -250,7 +258,7 @@ public class DownloadMission {
                     throw new IllegalStateException("创建信息文件失败");
                 }
             }
-            byte[] bytes = JSONObject.toJSONString(runnableList).getBytes(StandardCharsets.UTF_16BE);
+            byte[] bytes = JSONObject.toJSONString(new DownloadInfo(runnableList)).getBytes(StandardCharsets.UTF_8);
             FileChannel fc = fileOutputStream.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
