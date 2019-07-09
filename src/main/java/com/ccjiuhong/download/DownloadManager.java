@@ -131,7 +131,9 @@ public class DownloadManager {
         assertMissionExists(missionId);
         DownloadMission downloadMission = missionMap.get(missionId);
         boolean success;
-        if (downloadMission.getDownloadStatus() == EnumDownloadStatus.PAUSED) {
+
+        // 如果下载处于暂停状态或者存在进度文件，则继续下载，否则开始新的下载
+        if (downloadMission.getDownloadStatus() == EnumDownloadStatus.PAUSED || downloadMission.getProgressFile().exists()) {
             success = downloadMission.resume(downloadThreadPool);
         } else {
             success = downloadMission.start(downloadThreadPool);

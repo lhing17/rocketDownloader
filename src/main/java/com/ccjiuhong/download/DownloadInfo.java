@@ -49,7 +49,7 @@ public class DownloadInfo {
     }
 
     @Data
-    private class PositionInfo {
+    class PositionInfo {
         private int runnableId;
         private long startPosition;
         private long currentPosition;

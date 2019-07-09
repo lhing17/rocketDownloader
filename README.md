@@ -43,7 +43,7 @@ mvn test
 ## 规划特性
 - [x] 多线程
 - [ ] SWING GUI （初步）
-- [ ] JAVAFX FUI
+- [ ] JAVAFX GUI
 - [ ] 断点续传
 - [ ] 支持BT下载
 - [ ] 支持magnet link

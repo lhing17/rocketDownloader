@@ -63,15 +63,15 @@ public class DownloadMission {
     /**
      * 任务监测器
      */
-    private MissionMonitor missionMonitor;
+    private MissionMonitor missionMonitor = new MissionMonitor(this);
     /**
      * 速度监测器
      */
-    private SpeedMonitor speedMonitor;
+    private SpeedMonitor speedMonitor = new SpeedMonitor(this);
     /**
      * 自动保存器，用于自动保存下载进度
      */
-    private AutoSaver autoSaver;
+    private AutoSaver autoSaver = new AutoSaver(this);
     /**
      * 下载线程列表
      */
@@ -86,17 +86,25 @@ public class DownloadMission {
     private ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
             new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
     /**
+     * 进度文件
+     */
+    private File progressFile;
+    /**
      * 一个下载任务分配的最大线程数
      */
     private static final int MAX_THREAD_PER_MISSION = 5;
 
     private static final int MAX_DEFAULT_BYTE_SIZE = 10000;
 
+    private static final String DOWNLOAD_INFO_SUFFIX = "dl.json";
+
     public DownloadMission(int missionId, String fileUrl, String targetDirectory, String targetFileName) {
         this.missionId = missionId;
         this.fileUrl = fileUrl;
         this.targetDirectory = targetDirectory;
         this.targetFileName = targetFileName;
+        this.progressFile = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId),
+                DOWNLOAD_INFO_SUFFIX));
     }
 
     /**
@@ -107,9 +115,7 @@ public class DownloadMission {
      */
     public boolean start(DownloadThreadPool downloadThreadPool) {
         assertMissionStateCorrect(downloadThreadPool);
-        missionMonitor = new MissionMonitor(this);
-        speedMonitor = new SpeedMonitor(this);
-        autoSaver = new AutoSaver(this);
+
         // 开启速度监测
         executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
         // 开启自动保存进度
@@ -119,7 +125,7 @@ public class DownloadMission {
             long start = i * (fileSize / MAX_THREAD_PER_MISSION);
             long end = (i == MAX_THREAD_PER_MISSION - 1)
                     ? fileSize
-                    : (i + 1) * (fileSize / MAX_THREAD_PER_MISSION) ;
+                    : (i + 1) * (fileSize / MAX_THREAD_PER_MISSION);
             DownloadRunnable downloadRunnable =
                     new DownloadRunnable(targetDirectory, targetFileName, fileUrl, missionMonitor, start, end);
 
@@ -164,6 +170,10 @@ public class DownloadMission {
     public boolean resume(DownloadThreadPool downloadThreadPool) {
         try {
             assertMissionStateCorrect(downloadThreadPool);
+            // 开启速度监测
+            executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
+            // 开启自动保存进度
+            executorService.scheduleAtFixedRate(autoSaver, 0, 5, TimeUnit.SECONDS);
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
             downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
@@ -194,8 +204,8 @@ public class DownloadMission {
      * @return 读取结果
      */
     private boolean readDownloadInfo() {
-        File file = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId), "dl.json"));
-        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+
+        try (FileInputStream fileInputStream = new FileInputStream(progressFile)) {
             FileChannel fc = fileInputStream.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(MAX_DEFAULT_BYTE_SIZE);
             fc.read(buffer);
@@ -209,9 +219,17 @@ public class DownloadMission {
             }
             String downloadInfoJsonStr = sb.toString();
             this.runnableList.clear();
-            // TODO creat download info dto to remove circular dependencies
-            List<DownloadRunnable> runnableList = JSONObject.parseArray(downloadInfoJsonStr, DownloadRunnable.class);
-            this.runnableList.addAll(runnableList);
+
+            // 通过文件中的下载信息还原下载
+            DownloadInfo downloadInfo = JSONObject.parseObject(downloadInfoJsonStr, DownloadInfo.class);
+            List<DownloadInfo.PositionInfo> positionInfoList = downloadInfo.getPositionInfoList();
+            for (DownloadInfo.PositionInfo positionInfo : positionInfoList) {
+                DownloadRunnable downloadRunnable = new DownloadRunnable(downloadInfo.getTargetDirectory(),
+                        downloadInfo.getTargetFileName(), downloadInfo.getFileUrl(), missionMonitor,
+                        positionInfo.getStartPosition(), positionInfo.getCurrentPosition(),
+                        positionInfo.getEndPosition());
+                runnableList.add(downloadRunnable);
+            }
             return true;
         } catch (IOException e) {
             log.error("读取文件失败, read error is " + e.getMessage(), e);
@@ -229,8 +247,7 @@ public class DownloadMission {
         try {
             downloadThreadPool.cancel(missionId);
             this.runnableList.clear();
-            File file = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId), "dl.json"));
-            if (!file.delete()) {
+            if (!progressFile.delete()) {
                 log.warn("删除文件失败");
             }
             return true;
@@ -250,10 +267,9 @@ public class DownloadMission {
         if (runnableList.size() <= 0) {
             throw new IllegalStateException("当前没有下载任务");
         }
-        File file = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId), "dl.json"));
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-            if (!file.exists()) {
-                boolean newFile = file.createNewFile();
+        try (FileOutputStream fileOutputStream = new FileOutputStream(progressFile)) {
+            if (!progressFile.exists()) {
+                boolean newFile = progressFile.createNewFile();
                 if (!newFile) {
                     throw new IllegalStateException("创建信息文件失败");
                 }
