@@ -17,6 +17,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class DownloaderTest {
     public static void main(String[] args) {
+        testStartOrResume();
+    }
+
+
+    private static void testStartOrResume() {
         DownloadManager downloadManager = DownloadManager.getInstance();
         String fileUrl = "https://dldir1.qq.com/qqfile/qq/PCQQ9.1.5/25530/QQ9.1.5.25530.exe";
 //        String fileUrl = "https://raw.githubusercontent.com/Himself65/LianXue/master/public/1.png";

@@ -1,5 +1,7 @@
 package com.ccjiuhong.download;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.monitor.AutoSaver;
 import com.ccjiuhong.monitor.MissionMonitor;
@@ -21,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +97,7 @@ public class DownloadMission {
      */
     private static final int MAX_THREAD_PER_MISSION = 5;
 
-    private static final int MAX_DEFAULT_BYTE_SIZE = 10000;
+    private static final int MAX_DEFAULT_BYTE_SIZE = 1024;
 
     private static final String DOWNLOAD_INFO_SUFFIX = "dl.json";
 
@@ -119,7 +122,7 @@ public class DownloadMission {
         // 开启速度监测
         executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
         // 开启自动保存进度
-        executorService.scheduleAtFixedRate(autoSaver, 0, 5, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(autoSaver, 0, 1, TimeUnit.SECONDS);
         // 开启线程任务执行
         for (int i = 0; i < MAX_THREAD_PER_MISSION; i++) {
             long start = i * (fileSize / MAX_THREAD_PER_MISSION);
@@ -173,7 +176,7 @@ public class DownloadMission {
             // 开启速度监测
             executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
             // 开启自动保存进度
-            executorService.scheduleAtFixedRate(autoSaver, 0, 5, TimeUnit.SECONDS);
+            executorService.scheduleAtFixedRate(autoSaver, 0, 1, TimeUnit.SECONDS);
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
             downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
@@ -208,30 +211,37 @@ public class DownloadMission {
         try (FileInputStream fileInputStream = new FileInputStream(progressFile)) {
             FileChannel fc = fileInputStream.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(MAX_DEFAULT_BYTE_SIZE);
-            fc.read(buffer);
-            buffer.flip();
             StringBuilder sb = new StringBuilder();
-            CharBuffer charBuffer = buffer.asCharBuffer();
-            while (charBuffer.hasRemaining()) {
-                // 读取buffer当前位置的整数
-                char b = charBuffer.get();
-                sb.append(b);
+            while (fc.read(buffer) != -1) {
+                buffer.flip();
+                Charset charset = Charset.forName("utf-8");
+                CharBuffer charBuffer = charset.decode(buffer);
+                while (charBuffer.hasRemaining()) {
+                    // 读取buffer当前位置的整数
+                    char b = charBuffer.get();
+                    sb.append(b);
+                }
+                buffer.clear();
             }
             String downloadInfoJsonStr = sb.toString();
             this.runnableList.clear();
 
             // 通过文件中的下载信息还原下载
-            DownloadInfo downloadInfo = JSONObject.parseObject(downloadInfoJsonStr, DownloadInfo.class);
-            List<DownloadInfo.PositionInfo> positionInfoList = downloadInfo.getPositionInfoList();
-            for (DownloadInfo.PositionInfo positionInfo : positionInfoList) {
-                DownloadRunnable downloadRunnable = new DownloadRunnable(downloadInfo.getTargetDirectory(),
-                        downloadInfo.getTargetFileName(), downloadInfo.getFileUrl(), missionMonitor,
-                        positionInfo.getStartPosition(), positionInfo.getCurrentPosition(),
-                        positionInfo.getEndPosition());
+            JSONObject downloadInfo = JSON.parseObject(downloadInfoJsonStr);
+            JSONArray positionInfoList = downloadInfo.getJSONArray("positionInfoList");
+
+            for (Object positionInfo : positionInfoList) {
+                DownloadRunnable downloadRunnable = new DownloadRunnable(downloadInfo.getString("targetDirectory"),
+                        downloadInfo.getString("targetFileName"), downloadInfo.getString("fileUrl"), missionMonitor,
+                        ((JSONObject) positionInfo).getLong("startPosition"), ((JSONObject) positionInfo).getLong(
+                        "currentPosition"), ((JSONObject) positionInfo).getLong("endPosition"));
                 runnableList.add(downloadRunnable);
+                // 还原已下载的字节数
+                missionMonitor.down(downloadRunnable.getCurrentPosition() - downloadRunnable.getStartPosition());
             }
+
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("读取文件失败, read error is " + e.getMessage(), e);
             return false;
         }
