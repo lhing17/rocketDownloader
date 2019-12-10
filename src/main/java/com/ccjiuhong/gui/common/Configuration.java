@@ -1,4 +1,4 @@
-package com.ccjiuhong.gui.common;
+package com.ccjiuhong.gui.coqimpdevmmon;
 
 /**
  * @author G.Seinfeld

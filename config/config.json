@@ -1,5 +1,5 @@
 {
-  "downloadDirectory": "F:\\rocketDownloader\\download",
+  "downloadDirectory": "/home/lhing17/rocketDownloader/download",
   "maxThreadNum": 5,
   "language": "ChineseSimplified"
 }
