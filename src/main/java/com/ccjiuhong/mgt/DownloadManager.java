@@ -9,6 +9,8 @@ import com.ccjiuhong.mission.Mission;
 public interface DownloadManager {
     int addMission(String fileUrl, String targetDirectory, String targetFileName);
 
+    int addMission(String fileUrl, String targetDirectory, String targetFileName, boolean isBt);
+
     int addMission(Mission mission);
 
     boolean startOrResumeMission(int missionId);

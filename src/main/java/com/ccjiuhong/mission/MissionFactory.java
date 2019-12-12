@@ -12,10 +12,16 @@ public class MissionFactory {
      */
     private static int serialMissionId = 0;
 
-    public Mission createMissionAutomatically(String fileUrl, String targetDirectory, String targetFileName, DownloadThreadPool downloadThreadPool) {
+    public Mission createMissionIntelligently(String fileUrl, String targetDirectory, String targetFileName, DownloadThreadPool downloadThreadPool, boolean isBt) {
+        if (isBt) {
+            return new BitTorrentMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
+        }
         if (fileUrl.startsWith("http") || fileUrl.startsWith("https") || fileUrl.startsWith("ftp")) {
             return new HttpMission(serialMissionId++, fileUrl, targetDirectory,
                     targetFileName, downloadThreadPool);
+        }
+        if (fileUrl.startsWith("magnet")) {
+            return new MagnetMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
         }
 
         throw new RuntimeException("无法识别的文件地址");

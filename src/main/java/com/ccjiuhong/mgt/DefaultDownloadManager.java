@@ -90,9 +90,14 @@ public class DefaultDownloadManager implements DownloadManager {
      */
     @Override
     public int addMission(String fileUrl, String targetDirectory, String targetFileName) {
+        return addMission(fileUrl, targetDirectory, targetFileName, false);
+    }
+
+    @Override
+    public int addMission(String fileUrl, String targetDirectory, String targetFileName, boolean isBt) {
         assertMissionNotExist(fileUrl);
         log.info("增加了下载任务，文件地址为：{}，目标目录为{}，目标文件名为：{}", fileUrl, targetDirectory, targetFileName);
-        Mission mission = new MissionFactory().createMissionAutomatically(fileUrl, targetDirectory, targetFileName, downloadThreadPool);
+        Mission mission = new MissionFactory().createMissionIntelligently(fileUrl, targetDirectory, targetFileName, downloadThreadPool, isBt);
         return addMission(mission);
     }
 
