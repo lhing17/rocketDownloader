@@ -1,22 +1,22 @@
 package com.ccjiuhong.download;
 
+import com.ccjiuhong.mgt.DefaultDownloadManager;
+import com.ccjiuhong.mgt.DownloadManager;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author G. Seinfeld
  * @date 2019/07/09
  */
-public class DownloadManagerTest {
+public class DefaultDownloadManagerTest {
 
     DownloadManager manager;
 
     @Before
     public void setUp() throws Exception {
-        manager = DownloadManager.getInstance();
+        manager = DefaultDownloadManager.getInstance();
     }
 
     /**
@@ -24,8 +24,8 @@ public class DownloadManagerTest {
      */
     @Test
     public void getInstance() {
-        DownloadManager manager0 = DownloadManager.getInstance();
-        DownloadManager manager1 = DownloadManager.getInstance();
+        DownloadManager manager0 = DefaultDownloadManager.getInstance();
+        DownloadManager manager1 = DefaultDownloadManager.getInstance();
         Assertions.assertThat(manager0).isSameAs(manager1);
     }
 

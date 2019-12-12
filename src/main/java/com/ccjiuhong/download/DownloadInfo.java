@@ -32,11 +32,11 @@ public class DownloadInfo {
             return;
         }
         DownloadRunnable downloadRunnable = downloadRunnableList.get(0);
-        missionId = downloadRunnable.getMissionId();
+        missionId = downloadRunnable.getMission().getMissionId();
         fileUrl = downloadRunnable.getFileUrl();
         targetDirectory = downloadRunnable.getTargetDirectory();
         targetFileName = downloadRunnable.getTargetFileName();
-        fileSize = downloadRunnable.getMissionMonitor().getDownloadMission().getFileSize();
+        fileSize = downloadRunnable.getMission().getMetaData().getFileSize();
         positionInfoList = new ArrayList<>();
         for (DownloadRunnable runnable : downloadRunnableList) {
             PositionInfo positionInfo = new PositionInfo();
@@ -49,7 +49,7 @@ public class DownloadInfo {
     }
 
     @Data
-    class PositionInfo {
+    static class PositionInfo {
         private int runnableId;
         private long startPosition;
         private long currentPosition;

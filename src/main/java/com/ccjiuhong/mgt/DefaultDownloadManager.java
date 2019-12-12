@@ -1,5 +1,12 @@
-package com.ccjiuhong.download;
+package com.ccjiuhong.mgt;
 
+import com.ccjiuhong.download.DownloadThreadPool;
+import com.ccjiuhong.download.EnumDownloadStatus;
+import com.ccjiuhong.exception.MissionAlreadyExistsException;
+import com.ccjiuhong.exception.MissionNotExistException;
+import com.ccjiuhong.mission.Mission;
+import com.ccjiuhong.mission.MissionFactory;
+import com.ccjiuhong.mission.MissionMetaData;
 import com.ccjiuhong.util.DownloadUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,28 +26,25 @@ import java.util.concurrent.TimeUnit;
  * </p>
  *
  * @author G. Seinfeld
- * @date 2019/06/28
+ * @since 2019/06/28
  */
 @Slf4j
-public class DownloadManager {
-    /**
-     * 下载任务的ID，从0开始，每次加1
-     */
-    private static int serialMissionId = 0;
+public class DefaultDownloadManager implements DownloadManager {
+
     /**
      * 下载管理器的单例对象
      */
-    private static DownloadManager downloadManager;
+    private static DownloadManager defaultDownloadManager;
 
     /**
      * 缓存所有的下载任务，这里的key是任务的ID
      */
-    private static Map<Integer, DownloadMission> missionMap = new HashMap<>();
+    private static Map<Integer, Mission> missionMap = new HashMap<>();
 
     /**
      * 缓存下载地址的集合，保证下载地址不重复
      */
-    private static Set<String> missionUrls = new HashSet<>();
+    private static Set<String> missionUniqueIdentifiers = new HashSet<>();
 
     private static final int MAX_WORK_NUM = 10;
 
@@ -51,12 +55,12 @@ public class DownloadManager {
             new DownloadThreadPool(MAX_WORK_NUM, MAX_WORK_NUM, 200L, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(1024));
 
-    private static BlockingQueue<DownloadMission> downloadMissionBlockingQueue = new LinkedBlockingQueue<>();
+    private static BlockingQueue<Mission> downloadMissionBlockingQueue = new LinkedBlockingQueue<>();
 
     /**
      * 私有构造器，防止直接实例化
      */
-    private DownloadManager() {
+    private DefaultDownloadManager() {
 
     }
 
@@ -66,14 +70,14 @@ public class DownloadManager {
      * @return 下载管理器的单例对象
      */
     public static DownloadManager getInstance() {
-        if (downloadManager == null) {
-            synchronized (DownloadManager.class) {
-                if (downloadManager == null) {
-                    downloadManager = new DownloadManager();
+        if (defaultDownloadManager == null) {
+            synchronized (DefaultDownloadManager.class) {
+                if (defaultDownloadManager == null) {
+                    defaultDownloadManager = new DefaultDownloadManager();
                 }
             }
         }
-        return downloadManager;
+        return defaultDownloadManager;
     }
 
     /**
@@ -84,26 +88,45 @@ public class DownloadManager {
      * @param targetFileName  目标文件名
      * @return 任务重复时返回-1，添加成功返回任务ID
      */
+    @Override
     public int addMission(String fileUrl, String targetDirectory, String targetFileName) {
-        if (missionUrls.contains(fileUrl)) {
-            log.warn("下载任务{}已存在", fileUrl);
-            return -1;
-        }
+        assertMissionNotExist(fileUrl);
         log.info("增加了下载任务，文件地址为：{}，目标目录为{}，目标文件名为：{}", fileUrl, targetDirectory, targetFileName);
-        DownloadMission downloadMission = new DownloadMission(serialMissionId++, fileUrl, targetDirectory,
-                targetFileName);
-        addMission(downloadMission);
-        return downloadMission.getMissionId();
+        Mission mission = new MissionFactory().createMissionAutomatically(fileUrl, targetDirectory, targetFileName, downloadThreadPool);
+        return addMission(mission);
     }
 
     /**
      * 添加一个新的下载任务
-     *
-     * @param downloadMission 下载任务
+     * @param mission 下载任务
+     * @return 任务ID
      */
-    private void addMission(DownloadMission downloadMission) {
-        missionMap.put(downloadMission.getMissionId(), downloadMission);
-        missionUrls.add(downloadMission.getFileUrl());
+    @Override
+    public int addMission(Mission mission){
+        cacheMission(mission);
+        return mission.getMissionId();
+    }
+
+    /**
+     * 确保新增任务时任务不存在，如果存在，抛出异常，以实现快速失败（fail-fast）
+     *
+     * @param fileUrl 任务地址
+     */
+    private void assertMissionNotExist(String fileUrl) {
+        if (missionUniqueIdentifiers.contains(fileUrl)) {
+            log.warn("下载任务{}已存在", fileUrl);
+            throw new MissionAlreadyExistsException();
+        }
+    }
+
+    /**
+     * 将下载任务添加到内存的缓存中
+     *
+     * @param mission 下载任务
+     */
+    private void cacheMission(Mission mission) {
+        missionMap.put(mission.getMissionId(), mission);
+        missionUniqueIdentifiers.add(mission.getMetaData().getUniqueIdentifier());
     }
 
     /**
@@ -115,7 +138,7 @@ public class DownloadManager {
         // 判断是否存在任务
         if (!missionMap.containsKey(missionId)) {
             log.warn("missionId: {} does not exist.", missionId);
-            throw new IllegalStateException("任务不存在");
+            throw new MissionNotExistException();
         }
     }
 
@@ -126,17 +149,18 @@ public class DownloadManager {
      * @param missionId 任务id
      * @return 执行结果
      */
+    @Override
     public boolean startOrResumeMission(int missionId) {
         log.info("尝试开启任务，任务ID为{}", missionId);
         assertMissionExists(missionId);
-        DownloadMission downloadMission = missionMap.get(missionId);
+        Mission mission = missionMap.get(missionId);
         boolean success;
 
         // 如果下载处于暂停状态或者存在进度文件，则继续下载，否则开始新的下载
-        if (downloadMission.getDownloadStatus() == EnumDownloadStatus.PAUSED || downloadMission.getProgressFile().exists()) {
-            success = downloadMission.resume(downloadThreadPool);
+        if (mission.getMetaData().getStatus() == EnumDownloadStatus.PAUSED || mission.getMetaData().getProgressFile().exists()) {
+            success = mission.resume();
         } else {
-            success = downloadMission.start(downloadThreadPool);
+            success = mission.start();
         }
         return success;
     }
@@ -144,6 +168,7 @@ public class DownloadManager {
     /**
      * 开始所有下载任务
      */
+    @Override
     public void startOrResumeAll() {
         for (Integer missionId : missionMap.keySet()) {
             boolean missionSuccess = startOrResumeMission(missionId);
@@ -159,16 +184,18 @@ public class DownloadManager {
      *
      * @param missionId 任务ID
      */
+    @Override
     public boolean pauseMission(int missionId) {
         log.info("尝试暂停任务，任务ID为{}", missionId);
         assertMissionExists(missionId);
-        DownloadMission downloadMission = missionMap.get(missionId);
-        return downloadMission.pause(downloadThreadPool);
+        Mission mission = missionMap.get(missionId);
+        return mission.pause();
     }
 
     /**
      * 暂停所有下载任务
      */
+    @Override
     public void pauseAll() {
         for (Integer missionId : missionMap.keySet()) {
             boolean missionSuccess = pauseMission(missionId);
@@ -183,16 +210,18 @@ public class DownloadManager {
      *
      * @param missionId 任务ID
      */
+    @Override
     public boolean cancelMission(int missionId) {
         assertMissionExists(missionId);
-        DownloadMission downloadMission = missionMap.get(missionId);
+        Mission mission = missionMap.get(missionId);
         missionMap.remove(missionId);
-        return downloadMission.delete(downloadThreadPool);
+        return mission.delete();
     }
 
     /**
      * 取消所有下载任务
      */
+    @Override
     public void cancelAll() {
         for (Integer missionId : missionMap.keySet()) {
             boolean missionSuccess = cancelMission(missionId);
@@ -208,10 +237,11 @@ public class DownloadManager {
      * @param missionId 任务ID
      * @return 下载速度
      */
+    @Override
     public long getSpeed(int missionId) {
         assertMissionExists(missionId);
-        DownloadMission downloadMission = missionMap.get(missionId);
-        return downloadMission.getSpeedMonitor().getSpeed();
+        Mission mission = missionMap.get(missionId);
+        return mission.getMetaData().getSpeed();
     }
 
     /**
@@ -219,6 +249,7 @@ public class DownloadManager {
      *
      * @return 总下载速度
      */
+    @Override
     public long getTotalSpeed() {
         int speed = 0;
         for (Integer missionId : missionMap.keySet()) {
@@ -233,10 +264,11 @@ public class DownloadManager {
      * @param missionId 任务ID
      * @return 已下载的文件大小
      */
+    @Override
     public long getDownloadedSize(int missionId) {
         assertMissionExists(missionId);
-        DownloadMission downloadMission = missionMap.get(missionId);
-        return downloadMission.getMissionMonitor().getDownloadedSize().get();
+        Mission mission = missionMap.get(missionId);
+        return mission.getMetaData().getDownloadedSize();
     }
 
     /**
@@ -245,10 +277,12 @@ public class DownloadManager {
      * @param missionId 任务ID
      * @return 百分比
      */
+    @Override
     public String getReadableDownloadedPercent(int missionId) {
         assertMissionExists(missionId);
-        DownloadMission downloadMission = missionMap.get(missionId);
-        double percent = 100.0 * downloadMission.getSpeedMonitor().getCurrentSize() / downloadMission.getFileSize();
+        Mission mission = missionMap.get(missionId);
+        MissionMetaData metaData = mission.getMetaData();
+        double percent = 100.0 * metaData.getDownloadedSize() / metaData.getFileSize();
         return DownloadUtil.getReadablePercent(percent);
     }
 

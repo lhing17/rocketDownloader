@@ -65,7 +65,7 @@ public class DownloadThreadPool extends ThreadPoolExecutor {
     public Future<?> submit(Runnable task) {
         Future<?> future = super.submit(task);
         if (task instanceof DownloadRunnable) {
-            int missionId = ((DownloadRunnable) task).getMissionId();
+            int missionId = ((DownloadRunnable) task).getMission().getMissionId();
             runnableMap.put(future, task);
             futureMap.computeIfAbsent(missionId, f -> new ConcurrentLinkedQueue<>()).offer(future);
         } else {

@@ -1,11 +1,11 @@
 package com.ccjiuhong.gui.swing;
 
 import com.alibaba.fastjson.JSONObject;
-import com.ccjiuhong.download.DownloadManager;
 import com.ccjiuhong.gui.coqimpdevmmon.Configuration;
+import com.ccjiuhong.mgt.DefaultDownloadManager;
+import com.ccjiuhong.mgt.DownloadManager;
 import com.ccjiuhong.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -21,10 +21,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -56,7 +53,7 @@ public class DownloaderSwing extends JFrame {
         // 窗口关闭后自动停止程序
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         // 获取下载管理器的实例
-        DownloadManager downloadManager = DownloadManager.getInstance();
+        DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
 
         // 创建JPanel作为容器，所有其他组件都添加到JPanel中
         GridBagLayout gb = new GridBagLayout();
@@ -87,7 +84,7 @@ public class DownloaderSwing extends JFrame {
         jMenuBar.add(jMenu);
 
         // 添加新建下载任务的菜单项
-        addNewTaskMenuItem(jMenu, downloadManager, chart);
+        addNewTaskMenuItem(jMenu, defaultDownloadManager, chart);
 
         // 添加修改配置的菜单项
         addConfigCenterMenuItem(jMenu);
@@ -153,12 +150,12 @@ public class DownloaderSwing extends JFrame {
         });
     }
 
-    private void addNewTaskMenuItem(JMenu jMenu, DownloadManager downloadManager, JFreeChart chart) {
+    private void addNewTaskMenuItem(JMenu jMenu, DownloadManager defaultDownloadManager, JFreeChart chart) {
         JMenuItem item0 = new JMenuItem(languageConfig.getString("newTask"));
         jMenu.add(item0);
         item0.addActionListener(e -> {
             String fileUrl = JOptionPane.showInputDialog(languageConfig.getString("inputAddress"));
-            if (fileUrl != null) startMissionForUrl(fileUrl, downloadManager, chart);
+            if (fileUrl != null) startMissionForUrl(fileUrl, defaultDownloadManager, chart);
         });
     }
 
@@ -205,19 +202,19 @@ public class DownloaderSwing extends JFrame {
      *
      * @param fileUrl 文件下载地址
      */
-    private void startMissionForUrl(String fileUrl, DownloadManager downloadManager, JFreeChart chart) {
+    private void startMissionForUrl(String fileUrl, DownloadManager defaultDownloadManager, JFreeChart chart) {
         String targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-        int missionId = downloadManager.addMission(fileUrl, jsonConfig.getString("downloadDirectory"), targetFileName);
-        downloadManager.startOrResumeMission(missionId);
+        int missionId = defaultDownloadManager.addMission(fileUrl, jsonConfig.getString("downloadDirectory"), targetFileName);
+        defaultDownloadManager.startOrResumeMission(missionId);
 
         TimeSeries series = ((TimeSeriesCollection) ((XYPlot) chart.getPlot()).getDataset()).getSeries(0);
         ScheduledThreadPoolExecutor executorService = new ScheduledThreadPoolExecutor(1,
                 new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
         final Second[] second = new Second[]{new Second()};
         executorService.scheduleAtFixedRate(() -> {
-            log.info("当前下载百分比为：" + downloadManager.getReadableDownloadedPercent(missionId));
+            log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(missionId));
 
-            series.add(second[0], downloadManager.getTotalSpeed());
+            series.add(second[0], defaultDownloadManager.getTotalSpeed());
             second[0] = (Second) second[0].next();
         }, 0, 1, TimeUnit.SECONDS);
     }

@@ -1,6 +1,7 @@
 package com.ccjiuhong.download;
 
-import com.ccjiuhong.monitor.MissionMonitor;
+import com.ccjiuhong.mission.HttpMission;
+import com.ccjiuhong.mission.Mission;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +18,7 @@ import static com.ccjiuhong.util.SslUtil.trustAllHosts;
 
 /**
  * @author G. Seinfeld
- * @date 2019/06/27
+ * @since 2019/06/27
  */
 @Data
 @Slf4j
@@ -40,9 +41,9 @@ public class DownloadRunnable implements Runnable {
      */
     private String fileUrl;
     /**
-     * 任务监测器，用于监测某个线程下载的进度
+     * 当前下载任务
      */
-    private MissionMonitor missionMonitor;
+    private Mission mission;
     /**
      * 下载起始位置
      */
@@ -55,10 +56,6 @@ public class DownloadRunnable implements Runnable {
      * 文件结束位置
      */
     private long endPosition;
-    /**
-     * 任务ID
-     */
-    private final int missionId;
     /**
      * 线程ID
      */
@@ -78,25 +75,24 @@ public class DownloadRunnable implements Runnable {
      * @param endPosition     结束位置
      */
     public DownloadRunnable(String targetDirectory, String targetFileName, String fileUrl,
-                            MissionMonitor missionMonitor,
+                            Mission mission,
                             long startPosition, long currentPosition, long endPosition) {
         this.targetDirectory = targetDirectory;
         this.targetFileName = targetFileName;
         this.fileUrl = fileUrl;
-        this.missionMonitor = missionMonitor;
+        this.mission = mission;
         this.startPosition = startPosition;
         this.currentPosition = currentPosition;
         this.endPosition = endPosition;
         this.id = ID_COUNTER++;
-        this.missionId = missionMonitor.getDownloadMission().getMissionId();
     }
 
     /**
      * 不提供当前位置，则以开始位置作为当前位置
      */
     public DownloadRunnable(String targetDirectory, String targetFileName, String fileUrl,
-                            MissionMonitor missionMonitor, long startPosition, long endPosition) {
-        this(targetDirectory, targetFileName, fileUrl, missionMonitor, startPosition, startPosition, endPosition);
+                            Mission mission, long startPosition, long endPosition) {
+        this(targetDirectory, targetFileName, fileUrl, mission, startPosition, startPosition, endPosition);
     }
 
     @Override
@@ -132,7 +128,7 @@ public class DownloadRunnable implements Runnable {
                 } else {
                     randomAccessFile.write(buffer, 0, len);
                     currentPosition += len;
-                    missionMonitor.down(len);
+                    ((HttpMission)mission).getMissionMonitor().down(len);
                 }
             }
             bufferedInputStream.close();
@@ -176,7 +172,7 @@ public class DownloadRunnable implements Runnable {
             long newEndPosition = endPosition;
             long newStartPosition = currentPosition + half + 1;
             endPosition = newStartPosition - 1;
-            return new DownloadRunnable(targetDirectory, targetFileName, fileUrl, missionMonitor, newStartPosition,
+            return new DownloadRunnable(targetDirectory, targetFileName, fileUrl, mission, newStartPosition,
                     newEndPosition);
         } else {
             return null;

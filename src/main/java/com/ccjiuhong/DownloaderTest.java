@@ -1,6 +1,9 @@
 package com.ccjiuhong;
 
-import com.ccjiuhong.download.DownloadManager;
+import com.ccjiuhong.mgt.DefaultDownloadManager;
+import com.ccjiuhong.mgt.DownloadManager;
+import com.ccjiuhong.mission.BitTorrentMission;
+import com.ccjiuhong.mission.Mission;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
@@ -17,12 +20,12 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class DownloaderTest {
     public static void main(String[] args) {
-        testStartOrResume();
+        testStartOrResumeBitTorrentMission();
     }
 
 
-    private static void testStartOrResume() {
-        DownloadManager downloadManager = DownloadManager.getInstance();
+    private static void testStartOrResumeHttpMission() {
+        DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
         String fileUrl = "https://dldir1.qq.com/qqfile/qq/PCQQ9.1.5/25530/QQ9.1.5.25530.exe";
 //        String fileUrl = "https://raw.githubusercontent.com/Himself65/LianXue/master/public/1.png";
 //        String fileUrl = "https://download.oracle.com/otn/java/jdk/11.0
@@ -30,11 +33,22 @@ public class DownloaderTest {
 //        .zip?AuthParam=1561862894_d3c07f3538fb5d9f5c2a3df110fadbe4";
         String targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
 //        String targetFileName = "jdk-11.0.3_windows-x64_bin.zip";
-        int missionId = downloadManager.addMission(fileUrl, "F:\\rocketDownloader", targetFileName);
-        downloadManager.startOrResumeMission(missionId);
+        int missionId = defaultDownloadManager.addMission(fileUrl, "F:\\rocketDownloader", targetFileName);
+        defaultDownloadManager.startOrResumeMission(missionId);
 
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
                 new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
-        executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + downloadManager.getReadableDownloadedPercent(missionId)), 0, 1, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(missionId)), 0, 1, TimeUnit.SECONDS);
+    }
+
+    private static void testStartOrResumeBitTorrentMission(){
+        DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
+        String fileUrl = "/home/lhing17/a.torrent";
+        Mission mission = new BitTorrentMission(1, fileUrl, "/home/lhing17/rocketDownloader", "a");
+        defaultDownloadManager.addMission(mission);
+        defaultDownloadManager.startOrResumeMission(1);
+        ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
+                new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
+        executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(1)), 0, 1, TimeUnit.SECONDS);
     }
 }

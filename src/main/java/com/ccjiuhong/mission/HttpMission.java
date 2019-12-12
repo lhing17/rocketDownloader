@@ -1,14 +1,18 @@
-package com.ccjiuhong.download;
+package com.ccjiuhong.mission;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.ccjiuhong.download.DownloadInfo;
+import com.ccjiuhong.download.DownloadRunnable;
+import com.ccjiuhong.download.DownloadThreadPool;
+import com.ccjiuhong.download.EnumDownloadStatus;
 import com.ccjiuhong.monitor.AutoSaver;
-import com.ccjiuhong.monitor.MissionMonitor;
-import com.ccjiuhong.monitor.SpeedMonitor;
 import com.ccjiuhong.util.DownloadUtil;
 import com.ccjiuhong.util.Tested;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
@@ -30,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.ccjiuhong.util.SslUtil.DO_NOT_VERIFY;
 import static com.ccjiuhong.util.SslUtil.trustAllHosts;
@@ -38,39 +43,29 @@ import static com.ccjiuhong.util.SslUtil.trustAllHosts;
  * 指一个下载任务的对象，一个下载任务可以由多个线程组成
  *
  * @author G. Seinfeld
- * @date 2019/06/28
+ * @since 2019/06/28
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class DownloadMission {
-    /**
-     * 文件大小
-     */
-    private long fileSize;
-    /**
-     * 任务ID
-     */
-    private int missionId;
+public class HttpMission extends GenericMission {
     /**
      * 目标文件URL
      */
     private String fileUrl;
+
     /**
-     * 目标文件夹
+     * 下载任务所用的线程池
      */
-    private String targetDirectory;
-    /**
-     * 目标文件名
-     */
-    private String targetFileName;
+    private DownloadThreadPool downloadThreadPool;
     /**
      * 任务监测器
      */
-    private MissionMonitor missionMonitor = new MissionMonitor(this);
+    private MissionMonitor missionMonitor = new MissionMonitor();
     /**
      * 速度监测器
      */
-    private SpeedMonitor speedMonitor = new SpeedMonitor(this);
+    private SpeedMonitor speedMonitor = new SpeedMonitor();
     /**
      * 自动保存器，用于自动保存下载进度
      */
@@ -82,7 +77,8 @@ public class DownloadMission {
     /**
      * 下载状态
      */
-    private EnumDownloadStatus downloadStatus = EnumDownloadStatus.READY;
+    private EnumDownloadStatus status = EnumDownloadStatus.READY;
+
     /**
      * 用于执行速度监测的定时线程池
      */
@@ -99,45 +95,44 @@ public class DownloadMission {
 
     private static final int MAX_DEFAULT_BYTE_SIZE = 1024;
 
-    private static final String DOWNLOAD_INFO_SUFFIX = "dl.json";
 
-    public DownloadMission(int missionId, String fileUrl, String targetDirectory, String targetFileName) {
-        this.missionId = missionId;
+    public HttpMission(int missionId, String fileUrl, String targetDirectory, String targetFileName, DownloadThreadPool downloadThreadPool) {
+        super(missionId, targetDirectory, targetFileName);
         this.fileUrl = fileUrl;
-        this.targetDirectory = targetDirectory;
-        this.targetFileName = targetFileName;
-        this.progressFile = new File(DownloadUtil.getName(targetDirectory, String.valueOf(missionId),
-                DOWNLOAD_INFO_SUFFIX));
+        this.downloadThreadPool = downloadThreadPool;
     }
 
     /**
      * 开启当前下载任务
      *
-     * @param downloadThreadPool 下载的线程池
      * @return 开启成功返回true，否则返回false
      */
-    public boolean start(DownloadThreadPool downloadThreadPool) {
+    public boolean start() {
         assertMissionStateCorrect(downloadThreadPool);
 
         // 开启速度监测
         executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
         // 开启自动保存进度
         executorService.scheduleAtFixedRate(autoSaver, 0, 1, TimeUnit.SECONDS);
-        // 开启线程任务执行
-        for (int i = 0; i < MAX_THREAD_PER_MISSION; i++) {
-            long start = i * (fileSize / MAX_THREAD_PER_MISSION);
-            long end = (i == MAX_THREAD_PER_MISSION - 1)
-                    ? fileSize
-                    : (i + 1) * (fileSize / MAX_THREAD_PER_MISSION);
-            DownloadRunnable downloadRunnable =
-                    new DownloadRunnable(targetDirectory, targetFileName, fileUrl, missionMonitor, start, end);
 
-            log.info("新增下载线程，任务ID为{}，文件大小为{}，开始位置为{}，结束位置为{}", missionId, fileSize, start, end);
+        // TODO 线程数可配置
+        int threadNum = Math.min(getMetaData().getThreadNum(), MAX_THREAD_PER_MISSION);
+        // 开启线程任务执行
+        for (int i = 0; i < threadNum; i++) {
+            long fileSize = getMetaData().getFileSize();
+            long start = i * (fileSize / threadNum);
+            long end = (i == threadNum - 1)
+                    ? fileSize
+                    : (i + 1) * (fileSize / threadNum);
+            DownloadRunnable downloadRunnable =
+                    new DownloadRunnable(getMetaData().getTargetDirectory(), getMetaData().getTargetFileName(), fileUrl, this, start, end);
+
+            log.info("新增下载线程，任务ID为{}，文件大小为{}，开始位置为{}，结束位置为{}", getMissionId(), fileSize, start, end);
             downloadThreadPool.submit(downloadRunnable);
             runnableList.add(downloadRunnable);
         }
         // 修改任务状态
-        downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.DOWNLOADING);
+        status = EnumDownloadStatus.compareAndSetDownloadStatus(status, EnumDownloadStatus.DOWNLOADING);
         // 存储下载信息
         saveOrUpdateDownloadInfo(runnableList);
         return true;
@@ -146,15 +141,14 @@ public class DownloadMission {
     /**
      * 暂停当前任务
      *
-     * @param downloadThreadPool 下载的线程池
      * @return 暂停成功返回true，否则返回false
      */
-    public boolean pause(DownloadThreadPool downloadThreadPool) {
+    public boolean pause() {
         try {
             assertMissionStateCorrect(downloadThreadPool);
-            downloadThreadPool.pause(missionId);
+            downloadThreadPool.pause(getMissionId());
             // 修改任务状态为暂停
-            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus, EnumDownloadStatus.PAUSED);
+            status = EnumDownloadStatus.compareAndSetDownloadStatus(status, EnumDownloadStatus.PAUSED);
             // 存储下载信息
             saveOrUpdateDownloadInfo(runnableList);
             return true;
@@ -167,10 +161,9 @@ public class DownloadMission {
     /**
      * 继续下载
      *
-     * @param downloadThreadPool 下载的线程池
      * @return 继续成功返回true，否则返回false
      */
-    public boolean resume(DownloadThreadPool downloadThreadPool) {
+    public boolean resume() {
         try {
             assertMissionStateCorrect(downloadThreadPool);
             // 开启速度监测
@@ -179,7 +172,7 @@ public class DownloadMission {
             executorService.scheduleAtFixedRate(autoSaver, 0, 1, TimeUnit.SECONDS);
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
-            downloadStatus = EnumDownloadStatus.compareAndSetDownloadStatus(downloadStatus,
+            status = EnumDownloadStatus.compareAndSetDownloadStatus(status,
                     EnumDownloadStatus.DOWNLOADING);
             return true;
         } catch (Exception e) {
@@ -214,7 +207,7 @@ public class DownloadMission {
             StringBuilder sb = new StringBuilder();
             while (fc.read(buffer) != -1) {
                 buffer.flip();
-                Charset charset = Charset.forName("utf-8");
+                Charset charset = StandardCharsets.UTF_8;
                 CharBuffer charBuffer = charset.decode(buffer);
                 while (charBuffer.hasRemaining()) {
                     // 读取buffer当前位置的整数
@@ -232,7 +225,7 @@ public class DownloadMission {
 
             for (Object positionInfo : positionInfoList) {
                 DownloadRunnable downloadRunnable = new DownloadRunnable(downloadInfo.getString("targetDirectory"),
-                        downloadInfo.getString("targetFileName"), downloadInfo.getString("fileUrl"), missionMonitor,
+                        downloadInfo.getString("targetFileName"), downloadInfo.getString("fileUrl"), this,
                         ((JSONObject) positionInfo).getLong("startPosition"), ((JSONObject) positionInfo).getLong(
                         "currentPosition"), ((JSONObject) positionInfo).getLong("endPosition"));
                 runnableList.add(downloadRunnable);
@@ -250,12 +243,11 @@ public class DownloadMission {
     /**
      * 删除当前下载任务
      *
-     * @param downloadThreadPool 下载的线程池
      * @return 删除成功返回true，否则返回false
      */
-    public boolean delete(DownloadThreadPool downloadThreadPool) {
+    public boolean delete() {
         try {
-            downloadThreadPool.cancel(missionId);
+            downloadThreadPool.cancel(getMissionId());
             this.runnableList.clear();
             if (!progressFile.delete()) {
                 log.warn("删除文件失败");
@@ -266,6 +258,7 @@ public class DownloadMission {
             return false;
         }
     }
+
 
     /**
      * 存储下载信息
@@ -311,7 +304,9 @@ public class DownloadMission {
                 HttpsURLConnection https = (HttpsURLConnection) urlConnection;
                 trustAllHosts(https);
                 https.setHostnameVerifier(DO_NOT_VERIFY);
-                return https.getContentLengthLong();
+                long fileSize = https.getContentLengthLong();
+                getMetaData().setFileSize(fileSize);
+                return fileSize;
             }
             return urlConnection.getContentLengthLong();
         } catch (IOException e) {
@@ -331,10 +326,50 @@ public class DownloadMission {
             throw new IllegalStateException("线程池已停止");
         }
         // 获取文件大小，获取失败则返回false
-        if ((fileSize = getFileSizeFromUrl(fileUrl)) == 0) {
+        if ((getFileSizeFromUrl(fileUrl)) == 0) {
             throw new IllegalStateException("获取文件大小失败");
         }
     }
 
+    @Getter
+    public class MissionMonitor {
+        /**
+         * 已经下载的字节数，这里考虑到线程安全的问题，使用JUC包中的AtomicLong，确保计算的原子性
+         */
+        private AtomicLong downloadedSize = new AtomicLong();
+
+        /**
+         * 累加已下载字节数
+         *
+         * @param size 下载字节数
+         */
+        public void down(long size) {
+            downloadedSize.addAndGet(size);
+            if (getMetaData().getFileSize() == downloadedSize.get()) {
+                getMetaData().setStatus(EnumDownloadStatus.FINISHED);
+            }
+        }
+
+    }
+
+    @Getter
+    class SpeedMonitor implements Runnable {
+
+        private long lastSecondSize;
+        private long currentSize;
+        private long speed;
+
+
+        @Override
+        public void run() {
+            lastSecondSize = currentSize;
+            currentSize = getMissionMonitor().getDownloadedSize().get();
+            speed = currentSize - lastSecondSize;
+            getMetaData().setSpeed(speed);
+            if (!EnumDownloadStatus.FINISHED.equals(getMetaData().getStatus())) {
+                log.info("当前下载任务为{}，下载速度为{}", getMissionId(), DownloadUtil.getReadableSpeed(speed));
+            }
+        }
+    }
 
 }
