@@ -29,6 +29,7 @@ public class MagnetMission extends BitTorrentMission {
         // 创建客户端
         BtClient btClient = builder
                 .magnet(magnetUrl)
+                .afterTorrentFetched(torrent -> getMetaData().setFileSize(torrent.getSize()))
                 .stopWhenDownloaded()
                 .build();
         startDownload(btClient);

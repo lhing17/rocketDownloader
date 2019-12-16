@@ -1,5 +1,28 @@
 BT下载实现原理：
 
+BT种子文件（.torrent）的具体文件结构如下：
+全部内容必须都为Bencoding编码类型。整个文件为一个字典结构，包含如下关键字：
+-announce： tracker 服务器的 URL（字符串）；
+-announce-list（可选）：备用 tracker 服务器列表（列表）；
+-creation date（可选）：种子创建的时间，Unix 标准时间格式，从 1970 1 月1 日 00：00：00 到创建时间的秒数（整数）；
+-comment（可选）：备注（字符串） created by（可选）：创建人或创建程序的信息（字符串）；
+-info：一个字典结构，包含文件的主要信息。分为二种情况，单文件结构或多文件结构。
+-单文件info结构如下：
+    -length：文件长度，单位字节（整数）；
+    -md5sum（可选）：长 32 个字符的文件的 MD5 校验和，BT 不使用这个值，只是为了兼容一些程序所保留!（字符串）；
+    -name：文件名（字符串）；
+    -piece length：每个块的大小，单位字节（整数）， 块长一般来说是 2 的权值；
+    -pieces：每个块的 20 个字节的 SHA1 Hash 的值（二进制格式）。
+-多文件info结构如下：
+    -files：一个字典结构；
+    -length：文件长度，单位字节（整数）；
+    -md5sum（可选）：与单文件结构中相同；
+    -path：文件的路径和名字，是一个列表结构，如\test\test。txt 列表为l4：test8test。txte；
+    -name：最上层的目录名字（字符串）；
+    -piece length：与单文件结构中相同；
+    -pieces：与单文件结构中相同。
+
+
 初始化构造五大服务组件：
 - MessageDispatcher
     - 遍历Consumer和Supplier，处理消息分发（与Peer进行交互）

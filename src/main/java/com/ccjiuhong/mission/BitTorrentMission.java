@@ -52,17 +52,14 @@ public class BitTorrentMission extends GenericMission {
         Supplier<Torrent> supplier = null;
         try {
             final FileInputStream in = new FileInputStream(torrentFilePath);
-             supplier = ()->{
-                 Torrent torrent = runtime.service(IMetadataService.class).fromInputStream(in);
-                 getMetaData().setFileSize(torrent.getSize());
-                 return torrent;
-             };
+             supplier = ()-> runtime.service(IMetadataService.class).fromInputStream(in);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
 
         BtClient btClient = builder
                 .torrent(Objects.requireNonNull(supplier))
+                .afterTorrentFetched(torrent -> getMetaData().setFileSize(torrent.getSize()))
                 .stopWhenDownloaded()
                 .build();
         startDownload(btClient);
