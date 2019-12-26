@@ -1,0 +1,1 @@
+BT下载时，通过文件恢复DataDescriptor

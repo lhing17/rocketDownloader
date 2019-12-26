@@ -11,6 +11,7 @@ import bt.metainfo.Torrent;
 import bt.runtime.BtClient;
 import bt.runtime.BtRuntime;
 import bt.runtime.Config;
+import bt.torrent.TorrentPersist;
 import com.ccjiuhong.download.EnumDownloadStatus;
 import com.google.inject.Module;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class BitTorrentMission extends GenericMission {
         Supplier<Torrent> supplier = null;
         try {
             final FileInputStream in = new FileInputStream(torrentFilePath);
-             supplier = ()-> runtime.service(IMetadataService.class).fromInputStream(in);
+            supplier = () -> runtime.service(IMetadataService.class).fromInputStream(in);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -71,14 +72,23 @@ public class BitTorrentMission extends GenericMission {
         // 开始下载
         long[] downloaded = {0L, 0L};
         getMetaData().setStatus(EnumDownloadStatus.DOWNLOADING);
-        completableFuture = btClient.startAsync(torrentSessionState -> {
-            // 上一秒下载字节数
-            downloaded[0] = downloaded[1];
-            // 当前下载字节数
-            downloaded[1] = torrentSessionState.getDownloaded();
-            getMetaData().setSpeed(downloaded[1] - downloaded[0]);
-            getMetaData().setDownloadedSize(downloaded[1]);
-        }, 1000);
+        completableFuture = btClient.startAsync(
+                torrentSessionState -> {
+                    // 上一秒下载字节数
+                    downloaded[0] = downloaded[1];
+                    // 当前下载字节数
+                    downloaded[1] = torrentSessionState.getDownloaded();
+                    getMetaData().setSpeed(downloaded[1] - downloaded[0]);
+                    getMetaData().setDownloadedSize(downloaded[1]);
+                    log.info("设置下载的元数据，下载速度为：{}，已下载字节数为{}", getMetaData().getSpeed(), getMetaData().getDownloadedSize());
+                }, torrentRegistry -> {
+                    log.info("持久化种子信息");
+                    if (torrentRegistry instanceof TorrentPersist) {
+                        TorrentPersist persist = (TorrentPersist) torrentRegistry;
+                        persist.serializeDescriptors();
+//                        persist.serializeTorrents();
+                    }
+                }, 1000);
         log.info("新增BT下载任务，任务ID为{}，文件总大小为{}", getMissionId(), getMetaData().getFileSize());
     }
 

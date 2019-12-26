@@ -41,9 +41,9 @@ public class DownloaderTest {
         executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(missionId)), 0, 1, TimeUnit.SECONDS);
     }
 
-    private static void testStartOrResumeBitTorrentMission(){
+    private static void testStartOrResumeBitTorrentMission() {
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
-        String fileUrl = "/home/lhing17/a.torrent";
+        String fileUrl = "/home/lhing17/b.torrent";
         Mission mission = new BitTorrentMission(1, fileUrl, "/home/lhing17/rocketDownloader", "a");
         defaultDownloadManager.addMission(mission);
         defaultDownloadManager.startOrResumeMission(1);

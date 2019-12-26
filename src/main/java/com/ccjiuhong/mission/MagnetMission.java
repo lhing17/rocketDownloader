@@ -3,6 +3,12 @@ package com.ccjiuhong.mission;
 import bt.BtClientBuilder;
 import bt.runtime.BtClient;
 import bt.runtime.BtRuntime;
+import com.ccjiuhong.util.DotTorrentFileGenerator;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Paths;
 
 /**
  * 磁力链的任务
@@ -10,6 +16,7 @@ import bt.runtime.BtRuntime;
  * @author G. Seinfeld
  * @since 2019/12/12
  */
+@Slf4j
 public class MagnetMission extends BitTorrentMission {
 
     private String magnetUrl;
@@ -29,7 +36,18 @@ public class MagnetMission extends BitTorrentMission {
         // 创建客户端
         BtClient btClient = builder
                 .magnet(magnetUrl)
-                .afterTorrentFetched(torrent -> getMetaData().setFileSize(torrent.getSize()))
+                .afterTorrentFetched(torrent -> {
+                    getMetaData().setFileSize(torrent.getSize());
+                    String targetDirectory = getMetaData().getTargetDirectory();
+                    String fileName = Paths.get(targetDirectory, torrent.getTorrentId() + ".torrent").toString();
+                    FileOutputStream outputStream;
+                    try {
+                        outputStream = new FileOutputStream(fileName);
+                        DotTorrentFileGenerator.generate(torrent, outputStream);
+                    } catch (IOException e) {
+                        log.warn("无法写入torrent文件", e);
+                    }
+                })
                 .stopWhenDownloaded()
                 .build();
         startDownload(btClient);
