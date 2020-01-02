@@ -22,6 +22,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +44,7 @@ public class DownloaderSwing extends JFrame {
 
     JSONObject languageConfig = JSONObject.parseObject(FileUtil.readText(new File("config/i18n/" + lang + ".json")));
 
-    DownloaderSwing() {
+    DownloaderSwing() throws IOException {
         // 设置标题
         setTitle(Configuration.TITLE);
         // 设置尺寸
@@ -60,11 +61,11 @@ public class DownloaderSwing extends JFrame {
         JPanel jPanel = new JPanel(gb);
         add(jPanel);
 
-        JPanel leftPanel = new JPanel();
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.3;
         c.weighty = 1.0;
+        SideBar leftPanel = new SideBar(this, new GridBagLayout());
         gb.setConstraints(leftPanel, c);
         jPanel.add(leftPanel);
 
@@ -223,7 +224,7 @@ public class DownloaderSwing extends JFrame {
         try {
             UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
             new DownloaderSwing();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException | IOException e) {
             log.error(e.getMessage(), e);
         }
 

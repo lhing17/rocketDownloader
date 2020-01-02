@@ -43,7 +43,7 @@ public class DownloaderTest {
 
     private static void testStartOrResumeBitTorrentMission() {
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
-        String fileUrl = "/home/lhing17/b.torrent";
+        String fileUrl = "/home/lhing17/d.torrent";
         Mission mission = new BitTorrentMission(1, fileUrl, "/home/lhing17/rocketDownloader", "a");
         defaultDownloadManager.addMission(mission);
         defaultDownloadManager.startOrResumeMission(1);
