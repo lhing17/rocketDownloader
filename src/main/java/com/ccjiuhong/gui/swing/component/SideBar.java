@@ -1,7 +1,5 @@
 package com.ccjiuhong.gui.swing.component;
 
-import com.ccjiuhong.gui.swing.frame.MainFrame;
-
 import javax.swing.*;
 import java.awt.*;
 
@@ -13,13 +11,13 @@ import java.awt.*;
  */
 public class SideBar extends JPanel {
 
-    MainFrame owner;
+    private final IconBar iconBar;
+    private final SideMenuBar sideMenuBar;
 
-    public SideBar(MainFrame owner, GridBagLayout gridBagLayout) {
+    public SideBar(GridBagLayout gridBagLayout) {
         super(gridBagLayout);
-        this.owner = owner;
 
-        IconBar iconBar = new IconBar(owner);
+        iconBar = new IconBar( this);
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.25;
@@ -29,12 +27,20 @@ public class SideBar extends JPanel {
         this.add(iconBar);
 
 
-        SideMenuBar sideMenuBar = new SideMenuBar(owner);
+        sideMenuBar = new SideMenuBar();
         c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.75;
         c.weighty = 1.0;
         gridBagLayout.setConstraints(sideMenuBar, c);
         this.add(sideMenuBar);
+    }
+
+    public IconBar getIconBar() {
+        return iconBar;
+    }
+
+    public SideMenuBar getSideMenuBar() {
+        return sideMenuBar;
     }
 }

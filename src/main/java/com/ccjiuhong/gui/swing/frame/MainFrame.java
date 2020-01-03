@@ -6,14 +6,23 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * 主窗体
+ * 主窗体，通过单例模式来保证全局唯一。
  *
  * @author G. Seinfeld
  * @since 2020/01/03
  */
 public class MainFrame extends JFrame {
 
-    public MainFrame() throws HeadlessException {// 设置标题
+    private static MainFrame instance;
+
+    public static MainFrame getInstance() {
+        if (instance == null) {
+            instance = new MainFrame();
+        }
+        return instance;
+    }
+
+    private MainFrame() throws HeadlessException {// 设置标题
         setTitle(Configuration.TITLE);
         // 设置尺寸
         setSize(Configuration.WINDOW_WIDTH, Configuration.WINDOW_HEIGHT);
@@ -21,9 +30,5 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
         // 窗口关闭后自动停止程序
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-
-        MainPanel mainPanel = new MainPanel(this);
-        add(mainPanel);
-
     }
 }

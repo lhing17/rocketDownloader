@@ -1,7 +1,5 @@
 package com.ccjiuhong.gui.swing.component;
 
-import com.ccjiuhong.gui.swing.frame.MainFrame;
-
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,31 +10,35 @@ import java.util.List;
  */
 public class SideMenuBar extends JPanel {
 
-    MainFrame owner;
-    private JLabel title;
-    private List<JButton> buttons;
+    private final JLabel title;
+    private final List<JButton> buttons;
 
-    public SideMenuBar(MainFrame owner) {
-        this.owner = owner;
+    public SideMenuBar() {
         buttons = new ArrayList<>();
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         title = new JLabel("任务列表");
         add(title);
 
-        ImageButton downloading = new ImageTextButton("icons/start.png", "下载中");
-        addImageButton(downloading);
-
-        ImageButton waiting = new ImageTextButton("icons/pause.png", "等待中");
-        addImageButton(waiting);
-
-        ImageButton complete = new ImageTextButton("icons/stop.png", "已停止");
-        addImageButton(complete);
+        ImageButton downloading = DownloadingButton.getInstance();
+        ImageButton waiting = WaitingButton.getInstance();
+        ImageButton complete = CompletedButton.getInstance();
+        addImageButtons(downloading, waiting, complete);
 
     }
 
-    private void addImageButton(ImageButton downloading) {
-        add(downloading);
-        buttons.add(downloading);
+    public void addImageButtons(ImageButton... imageButtons) {
+        for (ImageButton imageButton : imageButtons) {
+            add(imageButton);
+            buttons.add(imageButton);
+        }
+    }
+
+    public JLabel getTitle() {
+        return title;
+    }
+
+    public List<JButton> getButtons() {
+        return buttons;
     }
 }

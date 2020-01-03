@@ -2,6 +2,7 @@ package com.ccjiuhong.gui.swing;
 
 import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.gui.swing.frame.MainFrame;
+import com.ccjiuhong.gui.swing.frame.MainPanel;
 import com.ccjiuhong.mgt.DefaultDownloadManager;
 import com.ccjiuhong.mgt.DownloadManager;
 import com.ccjiuhong.util.FileUtil;
@@ -49,7 +50,10 @@ public class DownloaderSwing {
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
 
         // 创建JPanel作为容器，所有其他组件都添加到JPanel中
-        mainFrame = new MainFrame();
+        mainFrame = MainFrame.getInstance();
+
+        MainPanel mainPanel = MainPanel.getInstance();
+        mainFrame.add(mainPanel);
         // 菜单条
         JMenuBar jMenuBar = new JMenuBar();
         mainFrame.setJMenuBar(jMenuBar);

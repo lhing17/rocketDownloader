@@ -1,5 +1,7 @@
 package com.ccjiuhong.gui.swing.aboutus;
 
+import com.ccjiuhong.gui.swing.frame.MainFrame;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -11,11 +13,11 @@ import java.awt.*;
  */
 public class AboutUs extends JDialog {
 
-    public AboutUs(Frame owner, String title, boolean modal) {
-        super(owner, title, modal);
+    public AboutUs(String title, boolean modal) {
+        super(MainFrame.getInstance(), title, modal);
 
         this.setSize(600, 400);
-        this.setLocationRelativeTo(owner);
+        this.setLocationRelativeTo(MainFrame.getInstance());
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         JPanel jPanel = new JPanel(new BorderLayout());
