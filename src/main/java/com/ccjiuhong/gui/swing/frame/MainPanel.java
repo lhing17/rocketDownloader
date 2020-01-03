@@ -35,11 +35,11 @@ public class MainPanel extends JPanel {
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.3;
         c.weighty = 1.0;
-        sideBar = new SideBar(new GridBagLayout());
+        sideBar = SideBar.getInstance();
         gb.setConstraints(sideBar, c);
         add(sideBar);
 
-        contentPanel = new ContentPanel();
+        contentPanel = ContentPanel.getInstance();
         c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.7;

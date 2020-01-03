@@ -10,7 +10,16 @@ import java.awt.*;
  * @since 2020/01/03
  */
 public class ContentPanel extends JPanel {
-    public ContentPanel() {
+    private static ContentPanel instance;
+
+    public static ContentPanel getInstance() {
+        if (instance == null) {
+            instance = new ContentPanel();
+        }
+        return instance;
+    }
+
+    private ContentPanel() {
         setBackground(Color.WHITE);
     }
 }

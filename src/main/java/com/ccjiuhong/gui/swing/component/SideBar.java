@@ -13,11 +13,19 @@ public class SideBar extends JPanel {
 
     private final IconBar iconBar;
     private final SideMenuBar sideMenuBar;
+    private static SideBar instance;
 
-    public SideBar(GridBagLayout gridBagLayout) {
-        super(gridBagLayout);
+    public static SideBar getInstance() {
+        if (instance == null) {
+            instance = new SideBar();
+        }
+        return instance;
+    }
 
-        iconBar = new IconBar( this);
+    private SideBar() {
+        GridBagLayout gridBagLayout = new GridBagLayout();
+        setLayout(gridBagLayout);
+        iconBar = new IconBar(this);
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.25;

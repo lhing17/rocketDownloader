@@ -49,11 +49,13 @@ public class DownloaderSwing {
         // 获取下载管理器的实例
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
 
-        // 创建JPanel作为容器，所有其他组件都添加到JPanel中
         mainFrame = MainFrame.getInstance();
 
+        // 创建JPanel作为容器，所有其他组件都添加到JPanel中
         MainPanel mainPanel = MainPanel.getInstance();
         mainFrame.add(mainPanel);
+
+
         // 菜单条
         JMenuBar jMenuBar = new JMenuBar();
         mainFrame.setJMenuBar(jMenuBar);
