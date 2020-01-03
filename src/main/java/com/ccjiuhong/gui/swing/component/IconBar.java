@@ -1,5 +1,9 @@
 package com.ccjiuhong.gui.swing.component;
 
+import com.ccjiuhong.gui.swing.DownloaderSwing;
+import com.ccjiuhong.mgt.DefaultDownloadManager;
+import com.ccjiuhong.mgt.DownloadManager;
+
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +43,15 @@ public class IconBar extends JPanel {
         });
 
         JButton addButton = new ImageButton("icons/add.png", 30, 30, true);
+        addButton.addActionListener(e -> {
+            String fileUrl = JOptionPane.showInputDialog(DownloaderSwing.languageConfig.getString("inputAddress"));
+            if (fileUrl != null) {
+                DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
+                String targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+                int missionId = defaultDownloadManager.addMission(fileUrl, DownloaderSwing.jsonConfig.getString("downloadDirectory"), targetFileName);
+                defaultDownloadManager.startOrResumeMission(missionId);
+            }
+        });
 
         addLeadingIcons(missionListButton, addButton);
 

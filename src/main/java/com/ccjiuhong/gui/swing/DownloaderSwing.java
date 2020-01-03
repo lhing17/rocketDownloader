@@ -7,12 +7,9 @@ import com.ccjiuhong.mgt.DefaultDownloadManager;
 import com.ccjiuhong.mgt.DownloadManager;
 import com.ccjiuhong.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.StandardChartTheme;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
@@ -22,8 +19,6 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.io.File;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import static javax.swing.JOptionPane.WARNING_MESSAGE;
 
@@ -36,12 +31,12 @@ import static javax.swing.JOptionPane.WARNING_MESSAGE;
 @Slf4j
 public class DownloaderSwing {
     // 读取配置文件
-    File configFile = new File("config/config.json");
-    JSONObject jsonConfig = JSONObject.parseObject(FileUtil.readText(configFile));
+    public static File configFile = new File("config/config.json");
+    public static JSONObject jsonConfig = JSONObject.parseObject(FileUtil.readText(configFile));
     // 读取语言包配置
-    String lang = jsonConfig.getString("language");
+    public static String lang = jsonConfig.getString("language");
 
-    JSONObject languageConfig = JSONObject.parseObject(FileUtil.readText(new File("config/i18n/" + lang + ".json")));
+    public static JSONObject languageConfig = JSONObject.parseObject(FileUtil.readText(new File("config/i18n/" + lang + ".json")));
 
     private MainFrame mainFrame;
 
@@ -137,7 +132,7 @@ public class DownloaderSwing {
         jMenu.add(item0);
         item0.addActionListener(e -> {
             String fileUrl = JOptionPane.showInputDialog(languageConfig.getString("inputAddress"));
-            if (fileUrl != null) startMissionForUrl(fileUrl, defaultDownloadManager, chart);
+            if (fileUrl != null) startMissionForUrl(fileUrl, defaultDownloadManager);
         });
     }
 
@@ -184,21 +179,12 @@ public class DownloaderSwing {
      *
      * @param fileUrl 文件下载地址
      */
-    private void startMissionForUrl(String fileUrl, DownloadManager defaultDownloadManager, JFreeChart chart) {
+    private void startMissionForUrl(String fileUrl, DownloadManager defaultDownloadManager) {
         String targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
         int missionId = defaultDownloadManager.addMission(fileUrl, jsonConfig.getString("downloadDirectory"), targetFileName);
         defaultDownloadManager.startOrResumeMission(missionId);
 
-        TimeSeries series = ((TimeSeriesCollection) ((XYPlot) chart.getPlot()).getDataset()).getSeries(0);
-        ScheduledThreadPoolExecutor executorService = new ScheduledThreadPoolExecutor(1,
-                new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
-        final Second[] second = new Second[]{new Second()};
-        executorService.scheduleAtFixedRate(() -> {
-            log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(missionId));
 
-            series.add(second[0], defaultDownloadManager.getTotalSpeed());
-            second[0] = (Second) second[0].next();
-        }, 0, 1, TimeUnit.SECONDS);
     }
 
     public static void main(String[] args) {
