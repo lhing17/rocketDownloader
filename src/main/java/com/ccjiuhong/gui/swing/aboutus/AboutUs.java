@@ -14,7 +14,7 @@ public class AboutUs extends JDialog {
     public AboutUs(Frame owner, String title, boolean modal) {
         super(owner, title, modal);
 
-        this.setSize(800, 400);
+        this.setSize(600, 400);
         this.setLocationRelativeTo(owner);
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 

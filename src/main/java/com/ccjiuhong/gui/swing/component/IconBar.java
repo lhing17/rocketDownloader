@@ -1,7 +1,7 @@
-package com.ccjiuhong.gui.swing;
+package com.ccjiuhong.gui.swing.component;
 
 import com.ccjiuhong.gui.swing.aboutus.AboutUs;
-import com.ccjiuhong.gui.swing.component.ImageButton;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -25,25 +25,30 @@ public class IconBar extends JPanel {
         leadingIcons = new ArrayList<>();
         tailIcons = new ArrayList<>();
 
-        JButton missionListButton = new ImageButton("icons/list.png", 30, 30);
-        JButton addButton = new ImageButton("icons/add.png", 30, 30);
+        JButton missionListButton = new ImageButton("icons/list.png", 30, 30, true);
+        JButton addButton = new ImageButton("icons/add.png", 30, 30, true);
 
         addLeadingIcons(missionListButton, addButton);
 
         add(Box.createVerticalGlue());
 
-        JButton configurationButton = new ImageButton("icons/config.png", 30, 30);
-        JButton aboutButton = new ImageButton("icons/about.png", 30, 30);
+        JButton configurationButton = new ImageButton("icons/config.png", 30, 30, true);
 
-        aboutButton.addActionListener(e->{
+        // 关于我们按钮
+        JButton aboutButton = buildAboutButton(owner);
+
+        addTailIcons(configurationButton, aboutButton);
+    }
+
+    @NotNull
+    private JButton buildAboutButton(JFrame owner) {
+        JButton aboutButton = new ImageButton("icons/about.png", 30, 30, true);
+
+        aboutButton.addActionListener(e -> {
             AboutUs aboutUs = new AboutUs(owner, "关于我们", true);
             aboutUs.setVisible(true);
         });
-
-       // aboutButton.addActionListener(e -> SystemUtil.openUrlFromBrowser("https://github.com/lhing17"));
-
-        addTailIcons(configurationButton, aboutButton);
-
+        return aboutButton;
     }
 
 

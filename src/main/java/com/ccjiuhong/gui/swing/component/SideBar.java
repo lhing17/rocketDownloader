@@ -1,8 +1,9 @@
-package com.ccjiuhong.gui.swing;
+package com.ccjiuhong.gui.swing.component;
+
+import com.ccjiuhong.gui.swing.frame.MainFrame;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
 
 /**
  * 左侧边条
@@ -12,9 +13,9 @@ import java.io.IOException;
  */
 public class SideBar extends JPanel {
 
-    JFrame owner;
+    MainFrame owner;
 
-    public SideBar(JFrame owner, GridBagLayout gridBagLayout) throws IOException {
+    public SideBar(MainFrame owner, GridBagLayout gridBagLayout) {
         super(gridBagLayout);
         this.owner = owner;
 
@@ -28,7 +29,7 @@ public class SideBar extends JPanel {
         this.add(iconBar);
 
 
-        SideMenuBar sideMenuBar = new SideMenuBar();
+        SideMenuBar sideMenuBar = new SideMenuBar(owner);
         c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.75;
