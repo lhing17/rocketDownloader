@@ -13,6 +13,7 @@ public class MissionFactory {
     private static int serialMissionId = 0;
 
     public Mission createMissionIntelligently(String fileUrl, String targetDirectory, String targetFileName, DownloadThreadPool downloadThreadPool, boolean isBt) {
+        fileUrl = fileUrl.trim();
         if (isBt) {
             return new BitTorrentMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
         }
