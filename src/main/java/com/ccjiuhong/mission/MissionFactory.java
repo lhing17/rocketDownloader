@@ -1,8 +1,11 @@
 package com.ccjiuhong.mission;
 
 import com.ccjiuhong.download.DownloadThreadPool;
+import com.ccjiuhong.util.DownloadUtil;
 
 /**
+ * 生产各类任务的工厂
+ *
  * @author G. Seinfeld
  * @since 2019/12/12
  */
@@ -13,10 +16,16 @@ public class MissionFactory {
     private static int serialMissionId = 0;
 
     public Mission createMissionIntelligently(String fileUrl, String targetDirectory, String targetFileName, DownloadThreadPool downloadThreadPool, boolean isBt) {
-        fileUrl = fileUrl.trim();
+        // 处理BT种子下载（不包括磁力链）
         if (isBt) {
             return new BitTorrentMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
         }
+
+        fileUrl = fileUrl.trim();
+        // 处理thunder等下载协议
+        fileUrl = DownloadUtil.decodeIfNecessary(fileUrl);
+
+
         if (fileUrl.startsWith("http") || fileUrl.startsWith("https") || fileUrl.startsWith("ftp")) {
             return new HttpMission(serialMissionId++, fileUrl, targetDirectory,
                     targetFileName, downloadThreadPool);
@@ -27,4 +36,6 @@ public class MissionFactory {
 
         throw new RuntimeException("无法识别的文件地址");
     }
+
+
 }

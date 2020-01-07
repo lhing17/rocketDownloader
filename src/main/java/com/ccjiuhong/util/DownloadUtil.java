@@ -2,6 +2,7 @@ package com.ccjiuhong.util;
 
 import java.io.File;
 import java.text.DecimalFormat;
+import java.util.Base64;
 
 /**
  * @author G.Seinfeld
@@ -46,5 +47,15 @@ public class DownloadUtil {
 
     public static String getReadableSpeed(long speed) {
         return getReadableSize(speed) + "/s";
+    }
+
+    public static String decodeIfNecessary(String url) {
+        if (url.startsWith("thunder")) {
+            String base64Code = url.substring(10);
+            byte[] bytes = Base64.getDecoder().decode(base64Code);
+            String decodedUrl = new String(bytes);
+            return decodedUrl.substring(2, decodedUrl.length() - 2);
+        }
+        return url;
     }
 }
