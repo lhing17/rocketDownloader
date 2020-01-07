@@ -26,7 +26,8 @@ public class DownloaderTest {
 
     private static void testStartOrResumeHttpMission() {
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
-        String fileUrl = "https://dldir1.qq.com/qqfile/qq/PCQQ9.1.5/25530/QQ9.1.5.25530.exe";
+        String fileUrl = "ftp://ygdy8:ygdy8@yg90.dydytt.net:7045/阳光电影www.ygdy8.com.高更：爱在他乡.BD.720p.法语中字.mkv";
+//        String fileUrl = "https://dldir1.qq.com/qqfile/qq/PCQQ9.1.5/25530/QQ9.1.5.25530.exe";
 //        String fileUrl = "https://raw.githubusercontent.com/Himself65/LianXue/master/public/1.png";
 //        String fileUrl = "https://download.oracle.com/otn/java/jdk/11.0
 //        .3+12/37f5e150db5247ab9333b11c1dddcd30/jdk-11.0.3_windows-x64_bin

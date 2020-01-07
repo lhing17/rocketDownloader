@@ -5,17 +5,22 @@ import java.text.DecimalFormat;
 import java.util.Base64;
 
 /**
+ * 下载相关的工具类
+ *
  * @author G.Seinfeld
- * @date 2019/06/29
+ * @since 2019/06/29
  */
 public class DownloadUtil {
+    /**
+     * 过程文件名
+     */
     private static final String FILE_KEY = "rocket";
 
     public static String getName(String targetDirectory, String prefix, String suffix) {
         return getPath(targetDirectory) + prefix + FILE_KEY + suffix;
     }
 
-    public static String getPath(String targetDirectory) {
+    private static String getPath(String targetDirectory) {
         return targetDirectory + File.separator;
     }
 
@@ -49,6 +54,11 @@ public class DownloadUtil {
         return getReadableSize(speed) + "/s";
     }
 
+    /**
+     * 如果下载地址需要解码，进行相应解码，否则返回原url。
+     * @param url 待解码的下载地址
+     * @return 根据情况返回解码后的url或原url
+     */
     public static String decodeIfNecessary(String url) {
         if (url.startsWith("thunder")) {
             String base64Code = url.substring(10);

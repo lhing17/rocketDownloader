@@ -17,6 +17,8 @@ import static com.ccjiuhong.util.SslUtil.DO_NOT_VERIFY;
 import static com.ccjiuhong.util.SslUtil.trustAllHosts;
 
 /**
+ * 下载所用的线程
+ *
  * @author G. Seinfeld
  * @since 2019/06/27
  */

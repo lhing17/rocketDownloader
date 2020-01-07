@@ -1,6 +1,6 @@
 package com.ccjiuhong.monitor;
 
-import com.ccjiuhong.mission.HttpMission;
+import com.ccjiuhong.mission.ServerToClientMission;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,15 +12,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AutoSaver implements Runnable {
 
-    private HttpMission httpMission;
+    private ServerToClientMission serverToClientMission;
 
-    public AutoSaver(HttpMission httpMission) {
-        this.httpMission = httpMission;
+    public AutoSaver(ServerToClientMission serverToClientMission) {
+        this.serverToClientMission = serverToClientMission;
     }
 
     @Override
     public void run() {
         log.info("更新进度文件");
-        httpMission.saveOrUpdateDownloadInfo(httpMission.getRunnableList());
+        serverToClientMission.saveOrUpdateDownloadInfo(serverToClientMission.getRunnableList());
     }
 }

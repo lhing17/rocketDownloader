@@ -28,6 +28,8 @@ public abstract class GenericMission implements Mission {
 
     public GenericMission(int missionId, String targetDirectory, String targetFileName) {
         this.missionId = missionId;
+
+        // 构造下载的元数据
         metaData = new MissionMetaData();
         metaData.setStatus(EnumDownloadStatus.READY);
         metaData.setTargetDirectory(targetDirectory);
