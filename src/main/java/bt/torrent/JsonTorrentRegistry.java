@@ -30,6 +30,7 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
     private IRuntimeLifecycleBinder lifecycleBinder;
     private EventSink eventSink;
 
+    private Set<TorrentId> torrentIds;
     private ConcurrentHashMap<TorrentId, Torrent> torrents;
     private ConcurrentHashMap<TorrentId, DefaultTorrentDescriptor> descriptors;
     private File torrentsJson;
@@ -50,6 +51,7 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
         this.lifecycleBinder = lifecycleBinder;
         this.eventSink = eventSink;
 
+        this.torrentIds = ConcurrentHashMap.newKeySet();
         this.torrents = new ConcurrentHashMap<>();
         this.descriptors = new ConcurrentHashMap<>();
     }
@@ -104,7 +106,7 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
 
     @Override
     public Collection<TorrentId> getTorrentIds() {
-        return Collections.unmodifiableCollection(torrents.keySet());
+        return Collections.unmodifiableCollection(torrentIds);
     }
 
     @Override
@@ -160,6 +162,7 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
         if (existing != null) {
             descriptor = existing;
         } else {
+            torrentIds.add(torrentId);
             addShutdownHook(torrentId, descriptor);
         }
         return descriptor;
