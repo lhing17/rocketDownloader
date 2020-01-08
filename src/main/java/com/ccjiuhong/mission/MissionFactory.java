@@ -26,8 +26,12 @@ public class MissionFactory {
         fileUrl = DownloadUtil.decodeIfNecessary(fileUrl);
 
 
-        if (fileUrl.startsWith("http") || fileUrl.startsWith("https") || fileUrl.startsWith("ftp")) {
+        if (fileUrl.startsWith("http") || fileUrl.startsWith("https")) {
             return new HttpMission(serialMissionId++, fileUrl, targetDirectory,
+                    targetFileName, downloadThreadPool);
+        }
+        if (fileUrl.startsWith("ftp")) {
+            return new FtpMission(serialMissionId++, fileUrl, targetDirectory,
                     targetFileName, downloadThreadPool);
         }
         if (fileUrl.startsWith("magnet")) {

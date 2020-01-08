@@ -3,10 +3,17 @@ package com.ccjiuhong;
 import com.ccjiuhong.mgt.DefaultDownloadManager;
 import com.ccjiuhong.mgt.DownloadManager;
 import com.ccjiuhong.mission.BitTorrentMission;
+import com.ccjiuhong.mission.MagnetMission;
 import com.ccjiuhong.mission.Mission;
+import com.ccjiuhong.util.DownloadUtil;
+import com.ccjiuhong.util.FtpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.net.ftp.FTPClient;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -20,13 +27,26 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class DownloaderTest {
     public static void main(String[] args) {
-        testStartOrResumeBitTorrentMission();
+//        testStartOrResumeMagnetMission();
+//        testStartOrResumeBitTorrentMission();
+//        decodeUrl();
+        testStartOrResumeHttpMission();
+//        List<String> urls = getAvailableUrls();
+//        for (String url : urls) {
+//            System.out.println(url);
+//        }
+    }
+
+    private static void decodeUrl() {
+        String url = "thunder://QUFtYWduZXQ6P3h0PXVybjpidGloOkM3Mjk1NkUxRUExMTU0NzEyOEIwRUY1ODkzMzhBNjhCNEM2M0Y2QzAmZG49SUJXLTUxOFpaWg==";
+        String decodedUrl = DownloadUtil.decodeIfNecessary(url);
+        System.out.println(decodedUrl);
     }
 
 
     private static void testStartOrResumeHttpMission() {
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
-        String fileUrl = "ftp://ygdy8:ygdy8@yg90.dydytt.net:7045/阳光电影www.ygdy8.com.高更：爱在他乡.BD.720p.法语中字.mkv";
+        String fileUrl = "ftp://ygdy8:ygdy8@yg39.dydytt.net:7004/阳光电影www.ygdy8.com.灭狼行动.HD.1080p.国语中字.mp4";
 //        String fileUrl = "https://dldir1.qq.com/qqfile/qq/PCQQ9.1.5/25530/QQ9.1.5.25530.exe";
 //        String fileUrl = "https://raw.githubusercontent.com/Himself65/LianXue/master/public/1.png";
 //        String fileUrl = "https://download.oracle.com/otn/java/jdk/11.0
@@ -34,7 +54,7 @@ public class DownloaderTest {
 //        .zip?AuthParam=1561862894_d3c07f3538fb5d9f5c2a3df110fadbe4";
         String targetFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
 //        String targetFileName = "jdk-11.0.3_windows-x64_bin.zip";
-        int missionId = defaultDownloadManager.addMission(fileUrl, "F:\\rocketDownloader", targetFileName);
+        int missionId = defaultDownloadManager.addMission(fileUrl, "/home/lhing17/rocketDownloader", targetFileName);
         defaultDownloadManager.startOrResumeMission(missionId);
 
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
@@ -51,5 +71,31 @@ public class DownloaderTest {
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
                 new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
         executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(1)), 0, 1, TimeUnit.SECONDS);
+    }
+
+    private static void testStartOrResumeMagnetMission() {
+        DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
+        String fileUrl = "magnet:?xt=urn:btih:1a42753d62534cb4a188d94029cb4db108f8b09e&dn=[电影天堂www.dytt89.com]婚姻故事BD中字修复版.mp4";
+        Mission mission = new MagnetMission(1, fileUrl, "/home/lhing17/rocketDownloader", "a");
+        defaultDownloadManager.addMission(mission);
+        defaultDownloadManager.startOrResumeMission(1);
+        ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
+                new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
+        executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(1)), 0, 1, TimeUnit.SECONDS);
+    }
+
+    private static List<String> getAvailableUrls() {
+        List<String> urls = new ArrayList<>();
+        for (int prefix = 10; prefix < 100; prefix++) {
+            for (int port = 7000; port < 10000; port++) {
+                String address = "yg" + prefix + ".dydytt.net";
+                System.out.println(address + ":" + port);
+                Optional<FTPClient> login = FtpUtil.login(address, port, "ygdy8", "ygdy8");
+                if (login.isPresent()) {
+                    urls.add(address + ":" + port);
+                }
+            }
+        }
+        return urls;
     }
 }

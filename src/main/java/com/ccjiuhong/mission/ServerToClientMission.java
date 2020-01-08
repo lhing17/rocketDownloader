@@ -3,10 +3,7 @@ package com.ccjiuhong.mission;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.ccjiuhong.download.DownloadInfo;
-import com.ccjiuhong.download.DownloadRunnable;
-import com.ccjiuhong.download.DownloadThreadPool;
-import com.ccjiuhong.download.EnumDownloadStatus;
+import com.ccjiuhong.download.*;
 import com.ccjiuhong.monitor.AutoSaver;
 import com.ccjiuhong.util.DownloadUtil;
 import com.ccjiuhong.util.Tested;
@@ -108,6 +105,7 @@ public abstract class ServerToClientMission extends GenericMission {
      * @return 开启成功返回true，否则返回false
      */
     public boolean start() {
+        // 确保当前任务状态正确
         assertMissionStateCorrect(downloadThreadPool);
 
         // 开启速度监测
@@ -125,7 +123,7 @@ public abstract class ServerToClientMission extends GenericMission {
                     ? fileSize
                     : (i + 1) * (fileSize / threadNum);
             DownloadRunnable downloadRunnable =
-                    new DownloadRunnable(getMetaData().getTargetDirectory(), getMetaData().getTargetFileName(), fileUrl, this, start, end);
+                    DownloadRunnableFactory.createDownloadRunnable(getMetaData().getTargetDirectory(), getMetaData().getTargetFileName(), fileUrl, this, start, end);
 
             log.info("新增下载线程，任务ID为{}，文件大小为{}，开始位置为{}，结束位置为{}", getMissionId(), fileSize, start, end);
             downloadThreadPool.submit(downloadRunnable);
@@ -224,10 +222,10 @@ public abstract class ServerToClientMission extends GenericMission {
             JSONArray positionInfoList = downloadInfo.getJSONArray("positionInfoList");
 
             for (Object positionInfo : positionInfoList) {
-                DownloadRunnable downloadRunnable = new DownloadRunnable(downloadInfo.getString("targetDirectory"),
+                DownloadRunnable downloadRunnable = DownloadRunnableFactory.createDownloadRunnable(downloadInfo.getString("targetDirectory"),
                         downloadInfo.getString("targetFileName"), downloadInfo.getString("fileUrl"), this,
                         ((JSONObject) positionInfo).getLong("startPosition"), ((JSONObject) positionInfo).getLong(
-                        "currentPosition"), ((JSONObject) positionInfo).getLong("endPosition"));
+                                "currentPosition"), ((JSONObject) positionInfo).getLong("endPosition"));
                 runnableList.add(downloadRunnable);
                 // 还原已下载的字节数
                 missionMonitor.down(downloadRunnable.getCurrentPosition() - downloadRunnable.getStartPosition());

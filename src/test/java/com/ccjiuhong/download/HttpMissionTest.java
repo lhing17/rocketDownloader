@@ -44,9 +44,9 @@ public class HttpMissionTest {
     public void saveOrUpdateDownloadInfo() {
 
         List<DownloadRunnable> runnableList = new ArrayList<>();
-        DownloadRunnable downloadRunnable = new DownloadRunnable(targetDirectory, targetFileName,
+        DownloadRunnable downloadRunnable = DownloadRunnableFactory.createDownloadRunnable(targetDirectory, targetFileName,
                 fileUrl, httpMission, 0, 999);
-        DownloadRunnable downloadRunnable1 = new DownloadRunnable(targetDirectory, targetFileName,
+        DownloadRunnable downloadRunnable1 = DownloadRunnableFactory.createDownloadRunnable(targetDirectory, targetFileName,
                 fileUrl, httpMission, 1000, 1999);
         runnableList.add(downloadRunnable);
         runnableList.add(downloadRunnable1);

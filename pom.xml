@@ -123,6 +123,13 @@
             <artifactId>fst</artifactId>
             <version>2.57</version>
         </dependency>
+        <!-- 2020-01-08引入，用于处理FTP下载 -->
+        <!-- https://mvnrepository.com/artifact/commons-net/commons-net -->
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>3.6</version>
+        </dependency>
 
     </dependencies>
     <build>
