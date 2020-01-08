@@ -33,8 +33,7 @@ public class FtpMission extends ServerToClientMission {
                     .map(ftpClient -> {
                         try {
                             ftpClient.enterLocalPassiveMode();
-                            FTPFile[] ftpFiles = ftpClient.listFiles(ftpInfo.getFullpath());
-                            return ftpFiles;
+                            return ftpClient.listFiles(ftpInfo.getFullpath());
                         } catch (IOException e) {
                             log.error(e.getMessage(), e);
                             return null;

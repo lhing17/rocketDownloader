@@ -123,17 +123,20 @@ public final class FtpUtil {
      * @param ftpPath FTP服务器路径
      * @return String
      */
-    private static String changeEncoding(FTPClient ftpClient, String ftpPath) {
-        String directory = null;
+    public static String changeEncoding(FTPClient ftpClient, String ftpPath) {
+        if (ftpPath == null) {
+            return null;
+        }
+        String pathname = null;
         try {
             if (FTPReply.isPositiveCompletion(ftpClient.sendCommand(OPTS_UTF8, "ON"))) {
                 localCharset = CHARSET_UTF8;
             }
-            directory = new String(ftpPath.getBytes(localCharset), serverCharset);
+            pathname = new String(ftpPath.getBytes(localCharset), serverCharset);
         } catch (Exception e) {
             log.error("路径编码转换失败", e);
         }
-        return directory;
+        return pathname;
     }
 
     /**

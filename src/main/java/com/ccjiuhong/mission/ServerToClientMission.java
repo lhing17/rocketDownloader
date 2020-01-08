@@ -109,9 +109,9 @@ public abstract class ServerToClientMission extends GenericMission {
         assertMissionStateCorrect(downloadThreadPool);
 
         // 开启速度监测
-        executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(speedMonitor, 5, 1, TimeUnit.SECONDS);
         // 开启自动保存进度
-        executorService.scheduleAtFixedRate(autoSaver, 0, 1, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(autoSaver, 5, 5, TimeUnit.SECONDS);
 
         // TODO 线程数可配置
         int threadNum = Math.min(getMetaData().getThreadNum(), MAX_THREAD_PER_MISSION);
@@ -165,9 +165,9 @@ public abstract class ServerToClientMission extends GenericMission {
         try {
             assertMissionStateCorrect(downloadThreadPool);
             // 开启速度监测
-            executorService.scheduleAtFixedRate(speedMonitor, 0, 1, TimeUnit.SECONDS);
+            executorService.scheduleAtFixedRate(speedMonitor, 5, 1, TimeUnit.SECONDS);
             // 开启自动保存进度
-            executorService.scheduleAtFixedRate(autoSaver, 0, 1, TimeUnit.SECONDS);
+            executorService.scheduleAtFixedRate(autoSaver, 5, 5, TimeUnit.SECONDS);
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
             status = EnumDownloadStatus.compareAndSetDownloadStatus(status,
@@ -265,9 +265,7 @@ public abstract class ServerToClientMission extends GenericMission {
      */
     @Tested
     public void saveOrUpdateDownloadInfo(List<DownloadRunnable> runnableList) {
-        if (runnableList.size() <= 0) {
-            throw new IllegalStateException("当前没有下载任务");
-        }
+
         try (FileOutputStream fileOutputStream = new FileOutputStream(progressFile)) {
             if (!progressFile.exists()) {
                 boolean newFile = progressFile.createNewFile();

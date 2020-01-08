@@ -1,5 +1,6 @@
 package com.ccjiuhong.download;
 
+import com.ccjiuhong.mission.FtpMission;
 import com.ccjiuhong.mission.HttpMission;
 import com.ccjiuhong.mission.Mission;
 
@@ -17,6 +18,9 @@ public class DownloadRunnableFactory {
         if (mission instanceof HttpMission)
             return new HttpDownloadRunnable(targetDirectory, targetFileName, fileUrl, mission, startPosition,
                     endPosition);
+        else if (mission instanceof FtpMission)
+            return new FtpDownloadRunnable(targetDirectory, targetFileName, fileUrl, mission, startPosition,
+                    endPosition);
         return new HttpDownloadRunnable(targetDirectory, targetFileName, fileUrl, mission, startPosition,
                 endPosition);
     }
@@ -26,6 +30,9 @@ public class DownloadRunnableFactory {
 
         if (mission instanceof HttpMission)
             return new HttpDownloadRunnable(targetDirectory, targetFileName, fileUrl, mission, startPosition, currentPosition,
+                    endPosition);
+        else if (mission instanceof FtpMission)
+            return new FtpDownloadRunnable(targetDirectory, targetFileName, fileUrl, mission, startPosition, currentPosition,
                     endPosition);
         return new HttpDownloadRunnable(targetDirectory, targetFileName, fileUrl, mission, startPosition, currentPosition,
                 endPosition);

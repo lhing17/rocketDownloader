@@ -43,6 +43,14 @@ public class FtpInfo {
      * FTP传输类型
      */
     private int type;
+    /**
+     * 路径名
+     */
+    private String pathname;
+    /**
+     * 文件名
+     */
+    private String filename;
 
     public static FtpInfo getInstance(String ftpUrl) throws MalformedURLException {
         FtpInfo ftpInfo = new FtpInfo();
@@ -91,7 +99,7 @@ public class FtpInfo {
         if (!path.endsWith("/")) {
             i = path.lastIndexOf('/');
             if (i > 0) {
-                filename = path.substring(i + 1, path.length());
+                filename = path.substring(i + 1);
                 filename = ParseUtil.decode(filename);
                 pathname = path.substring(0, i);
             } else {
@@ -102,6 +110,8 @@ public class FtpInfo {
             pathname = path.substring(0, path.length() - 1);
             filename = null;
         }
+        ftpInfo.setPathname(pathname);
+        ftpInfo.setFilename(filename);
         if (pathname != null) {
             ftpInfo.setFullpath(pathname + "/" + (filename != null ? filename : ""));
         } else {
