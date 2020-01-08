@@ -17,12 +17,12 @@ import java.nio.file.Paths;
  * @since 2019/12/12
  */
 @Slf4j
-public class MagnetMission extends BitTorrentMission {
+public class MagnetMission extends PeerToPeerMission {
 
     private String magnetUrl;
 
     public MagnetMission(int missionId, String magnetUrl, String targetDirectory, String targetFileName) {
-        super(missionId, null, targetDirectory, targetFileName);
+        super(missionId, targetDirectory, targetFileName);
         this.magnetUrl = magnetUrl;
     }
 
