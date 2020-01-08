@@ -110,12 +110,31 @@ public abstract class ServerToClientMission extends GenericMission {
 
         // 开启速度监测
         executorService.scheduleAtFixedRate(speedMonitor, 5, 1, TimeUnit.SECONDS);
+
         // 开启自动保存进度
         executorService.scheduleAtFixedRate(autoSaver, 5, 5, TimeUnit.SECONDS);
 
-        // TODO 线程数可配置
+        // 获取执行任务的线程数 TODO 线程数可配置
         int threadNum = Math.min(getMetaData().getThreadNum(), MAX_THREAD_PER_MISSION);
+
         // 开启线程任务执行
+        startMultiThreadJob(threadNum);
+
+        // 修改任务状态
+        status = EnumDownloadStatus.DOWNLOADING;
+
+        // 存储下载信息
+        saveOrUpdateDownloadInfo(runnableList);
+
+        return true;
+    }
+
+    /**
+     * 通过线程池开启线程，并加入到runnableList列表中
+     *
+     * @param threadNum 线程数
+     */
+    private void startMultiThreadJob(int threadNum) {
         for (int i = 0; i < threadNum; i++) {
             long fileSize = getMetaData().getFileSize();
             long start = i * (fileSize / threadNum);
@@ -129,11 +148,6 @@ public abstract class ServerToClientMission extends GenericMission {
             downloadThreadPool.submit(downloadRunnable);
             runnableList.add(downloadRunnable);
         }
-        // 修改任务状态
-        status = EnumDownloadStatus.compareAndSetDownloadStatus(status, EnumDownloadStatus.DOWNLOADING);
-        // 存储下载信息
-        saveOrUpdateDownloadInfo(runnableList);
-        return true;
     }
 
     /**
@@ -146,7 +160,7 @@ public abstract class ServerToClientMission extends GenericMission {
             assertMissionStateCorrect(downloadThreadPool);
             downloadThreadPool.pause(getMissionId());
             // 修改任务状态为暂停
-            status = EnumDownloadStatus.compareAndSetDownloadStatus(status, EnumDownloadStatus.PAUSED);
+            status = EnumDownloadStatus.PAUSED;
             // 存储下载信息
             saveOrUpdateDownloadInfo(runnableList);
             return true;
@@ -170,8 +184,7 @@ public abstract class ServerToClientMission extends GenericMission {
             executorService.scheduleAtFixedRate(autoSaver, 5, 5, TimeUnit.SECONDS);
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
-            status = EnumDownloadStatus.compareAndSetDownloadStatus(status,
-                    EnumDownloadStatus.DOWNLOADING);
+            status = EnumDownloadStatus.DOWNLOADING;
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);

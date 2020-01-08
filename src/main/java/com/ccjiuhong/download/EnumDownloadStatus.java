@@ -7,7 +7,7 @@ import java.util.Map;
  * 下载状态枚举类
  *
  * @author G. Seinfeld
- * @date 2019/06/28
+ * @since 2019/06/28
  */
 public enum EnumDownloadStatus {
     READY(0),
@@ -45,19 +45,4 @@ public enum EnumDownloadStatus {
         return null;
     }
 
-    /**
-     * 比较下载状态，如果新状态与原状态不同，返回新状态
-     *
-     * @param old  原先的下载状态
-     * @param _new 新的下载状态
-     */
-    public static EnumDownloadStatus compareAndSetDownloadStatus(EnumDownloadStatus old, EnumDownloadStatus _new) {
-        if (old == null || _new == null) {
-            throw new IllegalStateException("下载状态设置错误");
-        }
-        if (old.getCode() != _new.getCode()) {
-            return _new;
-        }
-        return old;
-    }
 }
