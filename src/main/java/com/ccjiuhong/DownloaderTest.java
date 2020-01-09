@@ -75,7 +75,7 @@ public class DownloaderTest {
 
     private static void testStartOrResumeMagnetMission() {
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
-        String fileUrl = "magnet:?xt=urn:btih:1a42753d62534cb4a188d94029cb4db108f8b09e&dn=[电影天堂www.dytt89.com]婚姻故事BD中字修复版.mp4";
+        String fileUrl = "magnet:?xt=urn:btih:5800E072B34BA6DD2AE2BF72940BBD4A831A6AC2&dn=Colette.15.10.09.Piper.Perri.Orgy.Is.The.New.Black.XXX.1080p.MP4-KTR%5Brarbg%5D";
         Mission mission = new MagnetMission(1, fileUrl, "/home/lhing17/rocketDownloader", "a");
         defaultDownloadManager.addMission(mission);
         defaultDownloadManager.startOrResumeMission(1);

@@ -572,6 +572,10 @@ public class Config {
     }
 
     public String getWorkDirectory() {
+        File workingDirectory = new File(workDirectory);
+        if (!workingDirectory.exists()) {
+            workingDirectory.mkdirs();
+        }
         return workDirectory;
     }
 

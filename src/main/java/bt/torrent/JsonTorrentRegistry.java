@@ -1,6 +1,6 @@
 package bt.torrent;
 
-import bt.data.Bitfield;
+import bt.data.ChunkDescriptor;
 import bt.data.DataDescriptor;
 import bt.data.IDataDescriptorFactory;
 import bt.data.Storage;
@@ -9,6 +9,7 @@ import bt.metainfo.Torrent;
 import bt.metainfo.TorrentId;
 import bt.runtime.Config;
 import bt.service.IRuntimeLifecycleBinder;
+import com.ccjiuhong.util.BtInfo;
 import com.ccjiuhong.util.SerializeUtil;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,6 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
     private Set<TorrentId> torrentIds;
     private ConcurrentHashMap<TorrentId, Torrent> torrents;
     private ConcurrentHashMap<TorrentId, DefaultTorrentDescriptor> descriptors;
-    private File torrentsJson;
     private File descriptorsJson;
 
     @Inject
@@ -45,7 +45,6 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
         if (!workingDirectory.exists()) {
             workingDirectory.mkdirs();
         }
-        this.torrentsJson = new File(workingDirectory, "torrents.rd");
         this.descriptorsJson = new File(workingDirectory, "descriptors.rd");
         this.dataDescriptorFactory = dataDescriptorFactory;
         this.lifecycleBinder = lifecycleBinder;
@@ -56,48 +55,30 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
         this.descriptors = new ConcurrentHashMap<>();
     }
 
-    public void serializeTorrents() {
-        Map<String, Object> map = new ConcurrentHashMap<>();
-        for (Map.Entry<TorrentId, Torrent> entry : torrents.entrySet()) {
-            map.put(entry.getKey().toString(), entry.getValue());
-        }
-        SerializeUtil.serialize(map, torrentsJson);
-    }
 
     public void serializeDescriptors() {
-        Map<String, Object> map = new ConcurrentHashMap<>();
+
+        Map<String, BtInfo> map = new ConcurrentHashMap<>();
         for (Map.Entry<TorrentId, DefaultTorrentDescriptor> entry : descriptors.entrySet()) {
-            Optional<BitSet> bitmask = Optional.ofNullable(entry.getValue())
-                    .map(DefaultTorrentDescriptor::getDataDescriptor)
-                    .map(DataDescriptor::getBitfield)
-                    .map(Bitfield::getBitmask);
-            bitmask.ifPresent(bitSet -> map.put(entry.getKey().toString(), bitSet));
+            DataDescriptor dataDescriptor = entry.getValue().getDataDescriptor();
+            BtInfo btInfo = new BtInfo();
+            btInfo.setTorrentId(entry.getKey());
+            btInfo.setBitMask(dataDescriptor.getBitfield().getBitmask());
+            btInfo.setPiecesTotal(dataDescriptor.getBitfield().getPiecesTotal());
+
+            List<ChunkDescriptor> chunkDescriptors = dataDescriptor.getChunkDescriptors();
+            List<Integer> blockCounts = new ArrayList<>();
+            List<BitSet> blockBitmasks = new ArrayList<>();
+            for (ChunkDescriptor chunkDescriptor : chunkDescriptors) {
+                blockCounts.add(chunkDescriptor.blockCount());
+                blockBitmasks.add(chunkDescriptor.getBitmask());
+            }
+            btInfo.setBlockCounts(blockCounts);
+            btInfo.setBlockBitmasks(blockBitmasks);
         }
         SerializeUtil.serialize(map, descriptorsJson);
     }
 
-
-    private ConcurrentHashMap<TorrentId, Torrent> deserializeTorrents(File torrentsJson) {
-        try {
-            return SerializeUtil.deserialize(torrentsJson, ConcurrentHashMap.class);
-        } catch (Exception e) {
-            log.warn("无法解析torrents.rd", e);
-            return new ConcurrentHashMap<>();
-        }
-    }
-
-    private ConcurrentHashMap<TorrentId, DefaultTorrentDescriptor> deserializeDescriptors(File descriptorsJson) {
-        try {
-            ConcurrentHashMap<TorrentId, BitSet> bitSetMap = SerializeUtil.deserialize(descriptorsJson, ConcurrentHashMap.class);
-            for (TorrentId torrentId : bitSetMap.keySet()) {
-                DefaultTorrentDescriptor descriptor = (DefaultTorrentDescriptor) register(torrentId);
-            }
-            return null;
-        } catch (Exception e) {
-            log.warn("无法解析descriptors.rd", e);
-            return new ConcurrentHashMap<>();
-        }
-    }
 
     @Override
     public Collection<Torrent> getTorrents() {
@@ -139,7 +120,7 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
         DefaultTorrentDescriptor descriptor = descriptors.get(torrentId);
         if (descriptor != null) {
             if (descriptor.getDataDescriptor() == null) {
-                descriptor.setDataDescriptor(dataDescriptorFactory.createDescriptor(torrent, storage));
+                descriptor.setDataDescriptor(dataDescriptorFactory.createDescriptor(torrent, storage, descriptorsJson));
             }
         } else {
             descriptor = getDefaultTorrentDescriptor(torrentId);
