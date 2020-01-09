@@ -6,6 +6,7 @@ import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.dht.DHTConfig;
 import bt.dht.DHTModule;
+import bt.net.InetPeerAddress;
 import bt.runtime.BtClient;
 import bt.runtime.BtRuntime;
 import bt.runtime.Config;
@@ -16,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -81,6 +84,18 @@ public abstract class PeerToPeerMission extends GenericMission {
             @Override
             public boolean shouldUseRouterBootstrap() {
                 return true;
+            }
+
+            // 提供 bootstrap nodes TODO 这些初始化节点可配置
+            @Override
+            public Collection<InetPeerAddress> getBootstrapNodes() {
+                return Arrays.asList(
+                        new InetPeerAddress("router.magnets.im", 6881),
+                        new InetPeerAddress("router.bitcomet.com", 6881),  // BitComet
+                        new InetPeerAddress("dht.aelitis.com", 6881),  // Vuze
+                        new InetPeerAddress("router.silotis.us", 6881), // IPv6
+                        new InetPeerAddress("dht.libtorrent.org", 25401) // @arvidn's
+                );
             }
         });
         return BtRuntime.builder().config(config).autoLoadModules().module(dhtModule).build();
