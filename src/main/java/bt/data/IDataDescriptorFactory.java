@@ -18,8 +18,6 @@ package bt.data;
 
 import bt.metainfo.Torrent;
 
-import java.io.File;
-
 /**
  * Factory of torrent data descriptors.
  *
@@ -41,9 +39,4 @@ public interface IDataDescriptorFactory {
      */
     DataDescriptor createDescriptor(Torrent torrent, Storage storage);
 
-    /**
-     * 从进度文件中恢复DataDescriptor相关数据
-     * @return
-     */
-    DataDescriptor createDescriptor(Torrent torrent, Storage storage, File progressFile);
 }

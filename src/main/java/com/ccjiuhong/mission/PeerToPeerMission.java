@@ -6,20 +6,28 @@ import bt.data.Storage;
 import bt.data.file.FileSystemStorage;
 import bt.dht.DHTConfig;
 import bt.dht.DHTModule;
+import bt.metainfo.TorrentId;
 import bt.net.InetPeerAddress;
+import bt.protocol.Protocols;
 import bt.runtime.BtClient;
 import bt.runtime.BtRuntime;
 import bt.runtime.Config;
 import bt.torrent.TorrentPersist;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.download.EnumDownloadStatus;
+import com.ccjiuhong.util.BtInfo;
+import com.ccjiuhong.util.FileUtil;
 import com.google.inject.Module;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 点对点类型下载任务
@@ -29,6 +37,8 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 public abstract class PeerToPeerMission extends GenericMission {
+
+    public static ConcurrentHashMap<TorrentId, BtInfo> btInfoMap = new ConcurrentHashMap<>();
 
     protected CompletableFuture<?> completableFuture;
 
@@ -55,8 +65,8 @@ public abstract class PeerToPeerMission extends GenericMission {
                     try {
                         if (torrentRegistry instanceof TorrentPersist) {
                             TorrentPersist persist = (TorrentPersist) torrentRegistry;
-                            persist.serializeDescriptors();
-                            //                        persist.serializeTorrents();
+                            TorrentId torrentId = TorrentId.fromBytes(Protocols.fromHex(getMetaData().getUniqueIdentifier()));
+                            persist.serializeDescriptors(torrentId, getMetaData().getDotTorrentFilePath());
                         }
                     } catch (Exception e) {
                         log.error("持久化种子信息失败", e);
@@ -74,14 +84,27 @@ public abstract class PeerToPeerMission extends GenericMission {
                 .storage(storage);
     }
 
-    protected BtRuntime getBtRuntime() {
+    protected static BtRuntime getBtRuntime() {
+
+
         // 开启多线程下载的配置
         Config config = new Config() {
             @Override
             public int getNumOfHashingThreads() {
-                return getMetaData().getThreadNum();
+                return Runtime.getRuntime().availableProcessors() * 2;
             }
         };
+
+
+        try {
+            File file = new File(config.getWorkDirectory(), "descriptors.rd");
+            JSONObject jsonObject = JSON.parseObject(FileUtil.readText(file));
+            for (String key : jsonObject.keySet()) {
+                btInfoMap.put(TorrentId.fromBytes(Protocols.fromHex(key)), BtInfo.fromJSONObject(jsonObject.getJSONObject(key)));
+            }
+        } catch (Exception e) {
+            log.warn("未能正确读取进度文件");
+        }
 
         // 开启从公开路由器启动 （enable bootstrapping from public routers）
         Module dhtModule = new DHTModule(new DHTConfig() {

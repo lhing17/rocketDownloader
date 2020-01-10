@@ -18,8 +18,6 @@ package bt.data;
 
 import bt.metainfo.Torrent;
 
-import java.io.File;
-
 /**
  *<p><b>Note that this class implements a service.
  * Hence, is not a part of the public API and is a subject to change.</b></p>
@@ -45,8 +43,4 @@ public class DataDescriptorFactory implements IDataDescriptorFactory {
         return new DefaultDataDescriptor(storage, torrent, verifier, dataReaderFactory, transferBlockSize);
     }
 
-    @Override
-    public DataDescriptor createDescriptor(Torrent torrent, Storage storage, File progressFile) {
-        return new DefaultDataDescriptor(storage, torrent, verifier, dataReaderFactory, transferBlockSize, progressFile);
-    }
 }

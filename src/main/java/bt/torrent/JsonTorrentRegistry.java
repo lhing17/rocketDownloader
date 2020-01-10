@@ -10,11 +10,12 @@ import bt.metainfo.TorrentId;
 import bt.runtime.Config;
 import bt.service.IRuntimeLifecycleBinder;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.ccjiuhong.mission.PeerToPeerMission;
 import com.ccjiuhong.util.BtInfo;
 import com.ccjiuhong.util.FileUtil;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -59,18 +60,11 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
     }
 
 
-    public void serializeDescriptors() {
-        String jsonString = FileUtil.readText(descriptorsJson);
-        JSONObject jsonObject = JSON.parseObject(jsonString);
-        Map<String, String> map;
-        if (jsonObject != null) {
-            Map<String, String> dataMap = jsonObject.entrySet().stream().collect(Collectors.toMap(
-                    Map.Entry::getKey, e -> (String) e.getValue()
-            ));
-            map = new ConcurrentHashMap<>(dataMap);
-        } else {
-            map = new ConcurrentHashMap<>();
-        }
+    public void serializeDescriptors(TorrentId torrentId, String dotTorrentFilePath) {
+        Map<String, String> map = PeerToPeerMission.btInfoMap.entrySet().stream().collect(Collectors.toMap(
+                e -> e.getKey().toString(), e -> e.getValue().toString()
+        ));
+
 
         for (Map.Entry<TorrentId, DefaultTorrentDescriptor> entry : descriptors.entrySet()) {
             DataDescriptor dataDescriptor = entry.getValue().getDataDescriptor();
@@ -90,6 +84,9 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
                 btInfo.setBlockCounts(blockCounts);
                 btInfo.setBlockBitMasks(blockBitmasks);
                 map.put(entry.getKey().toString(), btInfo.toString());
+                if (entry.getKey() == torrentId && StringUtils.isNotEmpty(dotTorrentFilePath)) {
+                    btInfo.setDotTorrentFilePath(dotTorrentFilePath);
+                }
             }
         }
         if (!map.isEmpty())
@@ -137,7 +134,7 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
         DefaultTorrentDescriptor descriptor = descriptors.get(torrentId);
         if (descriptor != null) {
             if (descriptor.getDataDescriptor() == null) {
-                descriptor.setDataDescriptor(dataDescriptorFactory.createDescriptor(torrent, storage, descriptorsJson));
+                descriptor.setDataDescriptor(dataDescriptorFactory.createDescriptor(torrent, storage));
             }
         } else {
             descriptor = getDefaultTorrentDescriptor(torrentId);

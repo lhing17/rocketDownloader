@@ -44,6 +44,8 @@ public class MagnetMission extends PeerToPeerMission {
                     try {
                         outputStream = new FileOutputStream(fileName);
                         DotTorrentFileGenerator.generate(torrent, outputStream);
+                        getMetaData().setDotTorrentFilePath(fileName);
+                        getMetaData().setUniqueIdentifier(torrent.getTorrentId().toString());
                     } catch (IOException e) {
                         log.warn("无法写入torrent文件", e);
                     }

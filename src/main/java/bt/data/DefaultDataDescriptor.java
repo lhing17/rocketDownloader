@@ -18,17 +18,19 @@ package bt.data;
 
 import bt.BtException;
 import bt.data.range.BlockRange;
+import bt.data.range.MutableBlockSet;
 import bt.data.range.Ranges;
 import bt.metainfo.Torrent;
 import bt.metainfo.TorrentFile;
+import com.ccjiuhong.mission.PeerToPeerMission;
+import com.ccjiuhong.util.BtInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.*;
 
 /**
- *<p><b>Note that this class is not a part of the public API and is a subject to change.</b></p>
+ * <p><b>Note that this class is not a part of the public API and is a subject to change.</b></p>
  */
 class DefaultDataDescriptor implements DataDescriptor {
 
@@ -55,44 +57,40 @@ class DefaultDataDescriptor implements DataDescriptor {
         this.torrent = torrent;
         this.verifier = verifier;
 
-        init(transferBlockSize, null);
+        init(transferBlockSize);
 
         this.reader = dataReaderFactory.createReader(torrent, this);
     }
 
+    private void init(long transferBlockSize) {
+        // 从缓存中读取当前下载的持久化信息
+        Optional<BtInfo> btInfo = Optional.ofNullable(PeerToPeerMission.btInfoMap.get(torrent.getTorrentId()));
 
-    public DefaultDataDescriptor(Storage storage,
-                                 Torrent torrent,
-                                 ChunkVerifier verifier,
-                                 DataReaderFactory dataReaderFactory,
-                                 int transferBlockSize,
-                                 File progressFile) {
-        this.storage = storage;
-        this.torrent = torrent;
-        this.verifier = verifier;
 
-        init(transferBlockSize, progressFile);
-
-        this.reader = dataReaderFactory.createReader(torrent, this);
-    }
-
-    private void init(long transferBlockSize, File progressFile) {
         List<TorrentFile> files = torrent.getFiles();
 
         long totalSize = torrent.getSize();
         long chunkSize = torrent.getChunkSize();
 
+        // 每次传输的块大小 默认为8KB
         if (transferBlockSize > chunkSize) {
             transferBlockSize = chunkSize;
         }
 
-        int chunksTotal = (int) Math.ceil(totalSize / chunkSize);
-        Map<Integer, List<TorrentFile>> filesForPieces = new HashMap<>((int)(chunksTotal / 0.75d) + 1);
+        // 总Piece数量
+        int chunksTotal = btInfo.map(BtInfo::getPiecesTotal).orElse((int) Math.ceil((double) totalSize / chunkSize));
+
+        // 每个Piece的文件列表
+        Map<Integer, List<TorrentFile>> filesForPieces = new HashMap<>((int) (chunksTotal / 0.75d) + 1);
+
+        // 每个Piece的Descriptor
         List<ChunkDescriptor> chunks = new ArrayList<>(chunksTotal + 1);
 
+        // 每个Piece的签名
         Iterator<byte[]> chunkHashes = torrent.getChunkHashes().iterator();
 
-        Map<StorageUnit, TorrentFile> storageUnitsToFilesMap = new LinkedHashMap<>((int)(files.size() / 0.75d) + 1);
+        // 存储单元（实体文件单元）和种子中文件的映射
+        Map<StorageUnit, TorrentFile> storageUnitsToFilesMap = new LinkedHashMap<>((int) (files.size() / 0.75d) + 1);
         files.forEach(f -> storageUnitsToFilesMap.put(storage.getUnit(torrent, f), f));
 
         // filter out empty files (and create them at once)
@@ -116,6 +114,7 @@ class DefaultDataDescriptor implements DataDescriptor {
 
             long off, lim;
             long remaining = totalSize;
+            int[] index = {0};
             while (remaining > 0) {
                 off = chunks.size() * chunkSize;
                 lim = Math.min(chunkSize, remaining);
@@ -130,9 +129,13 @@ class DefaultDataDescriptor implements DataDescriptor {
                 subrange.visitUnits((unit, off1, lim1) -> chunkFiles.add(storageUnitsToFilesMap.get(unit)));
                 filesForPieces.put(chunks.size(), chunkFiles);
 
-                chunks.add(buildChunkDescriptor(subrange, transferBlockSize, chunkHashes.next()));
+                BitSet bitSet = btInfo.map(BtInfo::getBlockBitMasks).map(bitSets -> bitSets.get(index[0])).orElse(null);
+                DefaultChunkDescriptor chunkDescriptor = buildChunkDescriptor(subrange, transferBlockSize, chunkHashes.next(), bitSet);
+
+                chunks.add(chunkDescriptor);
 
                 remaining -= chunkSize;
+                index[0]++;
             }
         }
 
@@ -140,22 +143,34 @@ class DefaultDataDescriptor implements DataDescriptor {
             throw new BtException("Wrong number of chunk hashes in the torrent: too many");
         }
 
-        this.bitfield = buildBitfield(chunks);
+        BitSet bitMask = btInfo.map(BtInfo::getBitMask).orElse(null);
+        this.bitfield = buildBitfield(chunks, bitMask);
         this.chunkDescriptors = chunks;
         this.storageUnits = storageUnitsToFilesMap.keySet();
         this.filesForPieces = filesForPieces;
     }
 
-    private ChunkDescriptor buildChunkDescriptor(DataRange data, long blockSize, byte[] checksum) {
+    private DefaultChunkDescriptor buildChunkDescriptor(DataRange data, long blockSize, byte[] checksum, BitSet bitSet) {
         BlockRange<DataRange> blockData = Ranges.blockRange(data, blockSize);
         DataRange synchronizedData = Ranges.synchronizedDataRange(blockData);
+        MutableBlockSet blockSet = (MutableBlockSet) blockData.getBlockSet();
+        if (bitSet != null) {
+            blockSet.getBitmask().or(bitSet);
+        }
         BlockSet synchronizedBlockSet = Ranges.synchronizedBlockSet(blockData.getBlockSet());
 
         return new DefaultChunkDescriptor(synchronizedData, synchronizedBlockSet, checksum);
     }
 
-    private Bitfield buildBitfield(List<ChunkDescriptor> chunks) {
+    private Bitfield buildBitfield(List<ChunkDescriptor> chunks, BitSet bitMask) {
         Bitfield bitfield = new Bitfield(chunks.size());
+        if (bitMask != null) {
+            for (int i = 0; i < chunks.size(); i++) {
+                if (bitMask.get(i)) {
+                    bitfield.markVerified(i);
+                }
+            }
+        }
         verifier.verify(chunks, bitfield);
         return bitfield;
     }

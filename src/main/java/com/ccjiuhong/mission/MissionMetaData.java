@@ -2,6 +2,7 @@ package com.ccjiuhong.mission;
 
 import com.ccjiuhong.download.EnumDownloadStatus;
 import lombok.Data;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
@@ -47,5 +48,11 @@ public class MissionMetaData {
      * 下载该任务的线程数
      */
     private int threadNum = 5;
+
+    /**
+     * 种子文件的地址，针对PeerToPeerMission
+     */
+    @Nullable
+    private String dotTorrentFilePath;
 
 }

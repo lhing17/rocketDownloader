@@ -40,20 +40,23 @@ public class BitTorrentMission extends PeerToPeerMission {
         try {
             final FileInputStream in = new FileInputStream(torrentFilePath);
             supplier = () -> runtime.service(IMetadataService.class).fromInputStream(in);
+            getMetaData().setDotTorrentFilePath(torrentFilePath);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
 
         BtClient btClient = builder
                 .torrent(Objects.requireNonNull(supplier))
-                .afterTorrentFetched(torrent -> getMetaData().setFileSize(torrent.getSize()))
+                .afterTorrentFetched(torrent -> {
+                    getMetaData().setFileSize(torrent.getSize());
+                    getMetaData().setUniqueIdentifier(torrent.getTorrentId().toString());
+                })
                 .stopWhenDownloaded()
                 .build();
         startDownload(btClient);
 
         return true;
     }
-
 
 
     @Override
