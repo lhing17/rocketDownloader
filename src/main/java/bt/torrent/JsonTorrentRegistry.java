@@ -9,8 +9,10 @@ import bt.metainfo.Torrent;
 import bt.metainfo.TorrentId;
 import bt.runtime.Config;
 import bt.service.IRuntimeLifecycleBinder;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.ccjiuhong.util.BtInfo;
-import com.ccjiuhong.util.SerializeUtil;
+import com.ccjiuhong.util.FileUtil;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -19,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * @author G. Seinfeld
@@ -57,26 +60,40 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
 
 
     public void serializeDescriptors() {
+        String jsonString = FileUtil.readText(descriptorsJson);
+        JSONObject jsonObject = JSON.parseObject(jsonString);
+        Map<String, String> map;
+        if (jsonObject != null) {
+            Map<String, String> dataMap = jsonObject.entrySet().stream().collect(Collectors.toMap(
+                    Map.Entry::getKey, e -> (String) e.getValue()
+            ));
+            map = new ConcurrentHashMap<>(dataMap);
+        } else {
+            map = new ConcurrentHashMap<>();
+        }
 
-        Map<String, BtInfo> map = new ConcurrentHashMap<>();
         for (Map.Entry<TorrentId, DefaultTorrentDescriptor> entry : descriptors.entrySet()) {
             DataDescriptor dataDescriptor = entry.getValue().getDataDescriptor();
-            BtInfo btInfo = new BtInfo();
-            btInfo.setTorrentId(entry.getKey());
-            btInfo.setBitMask(dataDescriptor.getBitfield().getBitmask());
-            btInfo.setPiecesTotal(dataDescriptor.getBitfield().getPiecesTotal());
+            if (dataDescriptor != null) {
+                BtInfo btInfo = new BtInfo();
+                btInfo.setTorrentId(entry.getKey());
+                btInfo.setBitMask(dataDescriptor.getBitfield().getBitmask());
+                btInfo.setPiecesTotal(dataDescriptor.getBitfield().getPiecesTotal());
 
-            List<ChunkDescriptor> chunkDescriptors = dataDescriptor.getChunkDescriptors();
-            List<Integer> blockCounts = new ArrayList<>();
-            List<BitSet> blockBitmasks = new ArrayList<>();
-            for (ChunkDescriptor chunkDescriptor : chunkDescriptors) {
-                blockCounts.add(chunkDescriptor.blockCount());
-                blockBitmasks.add(chunkDescriptor.getBitmask());
+                List<ChunkDescriptor> chunkDescriptors = dataDescriptor.getChunkDescriptors();
+                List<Integer> blockCounts = new ArrayList<>();
+                List<BitSet> blockBitmasks = new ArrayList<>();
+                for (ChunkDescriptor chunkDescriptor : chunkDescriptors) {
+                    blockCounts.add(chunkDescriptor.blockCount());
+                    blockBitmasks.add(chunkDescriptor.getBitmask());
+                }
+                btInfo.setBlockCounts(blockCounts);
+                btInfo.setBlockBitMasks(blockBitmasks);
+                map.put(entry.getKey().toString(), btInfo.toString());
             }
-            btInfo.setBlockCounts(blockCounts);
-            btInfo.setBlockBitmasks(blockBitmasks);
         }
-        SerializeUtil.serialize(map, descriptorsJson);
+        if (!map.isEmpty())
+            FileUtil.writeText(descriptorsJson, JSON.toJSONString(map));
     }
 
 

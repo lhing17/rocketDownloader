@@ -52,10 +52,14 @@ public abstract class PeerToPeerMission extends GenericMission {
                     log.info("设置下载的元数据，下载速度为：{}，已下载字节数为{}", getMetaData().getSpeed(), getMetaData().getDownloadedSize());
                 }, torrentRegistry -> {
                     log.info("持久化种子信息");
-                    if (torrentRegistry instanceof TorrentPersist) {
-                        TorrentPersist persist = (TorrentPersist) torrentRegistry;
-                        persist.serializeDescriptors();
-//                        persist.serializeTorrents();
+                    try {
+                        if (torrentRegistry instanceof TorrentPersist) {
+                            TorrentPersist persist = (TorrentPersist) torrentRegistry;
+                            persist.serializeDescriptors();
+                            //                        persist.serializeTorrents();
+                        }
+                    } catch (Exception e) {
+                        log.error("持久化种子信息失败", e);
                     }
                 }, 1000);
         log.info("新增BT下载任务，任务ID为{}，文件总大小为{}", getMissionId(), getMetaData().getFileSize());

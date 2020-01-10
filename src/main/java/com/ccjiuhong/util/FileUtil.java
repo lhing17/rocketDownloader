@@ -1,13 +1,15 @@
 package com.ccjiuhong.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.*;
 
 /**
  * @author G. Seinfeld
- * @date 2019/07/02
+ * @since 2019/07/02
  */
+@Slf4j
 public final class FileUtil {
     private FileUtil() {
     }
@@ -28,6 +30,7 @@ public final class FileUtil {
      * @param file 要读取的文件
      * @return 文件内容的字符串
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static String readText(File file) {
         String encoding = "UTF-8";
         long filelength = file.length();
@@ -36,7 +39,7 @@ public final class FileUtil {
             in.read(filecontent);
             return new String(filecontent, encoding);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -50,7 +53,7 @@ public final class FileUtil {
         try (FileWriter fileWriter = new FileWriter(file)) {
             fileWriter.write(text);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 }
