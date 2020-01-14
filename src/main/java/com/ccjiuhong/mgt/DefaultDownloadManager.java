@@ -7,6 +7,7 @@ import com.ccjiuhong.exception.MissionNotExistException;
 import com.ccjiuhong.mission.Mission;
 import com.ccjiuhong.mission.MissionFactory;
 import com.ccjiuhong.mission.MissionMetaData;
+import com.ccjiuhong.mission.PeerToPeerMission;
 import com.ccjiuhong.util.DownloadUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,6 +75,8 @@ public class DefaultDownloadManager implements DownloadManager {
             synchronized (DefaultDownloadManager.class) {
                 if (defaultDownloadManager == null) {
                     defaultDownloadManager = new DefaultDownloadManager();
+                    // 初始化BT下载的环境
+                    PeerToPeerMission.initBtRuntime();
                 }
             }
         }
@@ -103,11 +106,12 @@ public class DefaultDownloadManager implements DownloadManager {
 
     /**
      * 添加一个新的下载任务
+     *
      * @param mission 下载任务
      * @return 任务ID
      */
     @Override
-    public int addMission(Mission mission){
+    public int addMission(Mission mission) {
         cacheMission(mission);
         return mission.getMissionId();
     }

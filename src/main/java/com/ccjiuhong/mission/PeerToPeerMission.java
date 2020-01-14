@@ -98,7 +98,11 @@ public abstract class PeerToPeerMission extends GenericMission {
     protected static BtRuntime getBtRuntime() {
         if (btRuntime != null)
             return btRuntime;
+        return initBtRuntime();
 
+    }
+
+    public static BtRuntime initBtRuntime() {
         // 开启多线程下载的配置
         Config config = new Config() {
             @Override
