@@ -1,7 +1,13 @@
 package com.ccjiuhong.mission;
 
+import bt.magnet.MagnetUri;
+import bt.magnet.MagnetUriParser;
+import bt.metainfo.TorrentId;
 import com.ccjiuhong.download.DownloadThreadPool;
+import com.ccjiuhong.download.EnumDownloadStatus;
+import com.ccjiuhong.util.BtInfo;
 import com.ccjiuhong.util.DownloadUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 生产各类任务的工厂
@@ -9,6 +15,7 @@ import com.ccjiuhong.util.DownloadUtil;
  * @author G. Seinfeld
  * @since 2019/12/12
  */
+@Slf4j
 public class MissionFactory {
     /**
      * 下载任务的ID，从0开始，每次加1
@@ -35,6 +42,19 @@ public class MissionFactory {
                     targetFileName, downloadThreadPool);
         }
         if (fileUrl.startsWith("magnet")) {
+            try {
+                MagnetUri magnetUri = MagnetUriParser.lenientParser().parse(fileUrl);
+                TorrentId torrentId = magnetUri.getTorrentId();
+                if (PeerToPeerMission.btInfoMap.containsKey(torrentId)) {
+                    BtInfo btInfo = PeerToPeerMission.btInfoMap.get(torrentId);
+                    String torrentFilePath = btInfo.getDotTorrentFilePath();
+                    Mission mission = new BitTorrentMission(serialMissionId++, torrentFilePath, targetDirectory, targetFileName);
+                    mission.getMetaData().setStatus(EnumDownloadStatus.PAUSED);
+                    return mission;
+                }
+            } catch (Exception e) {
+                log.debug("创建BT下载任务失败", e);
+            }
             return new MagnetMission(serialMissionId++, fileUrl, targetDirectory, targetFileName);
         }
 

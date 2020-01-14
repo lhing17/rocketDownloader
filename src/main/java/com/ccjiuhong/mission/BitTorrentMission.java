@@ -3,7 +3,6 @@ package com.ccjiuhong.mission;
 import bt.BtClientBuilder;
 import bt.metainfo.IMetadataService;
 import bt.metainfo.Torrent;
-import bt.runtime.BtClient;
 import bt.runtime.BtRuntime;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,8 +29,6 @@ public class BitTorrentMission extends PeerToPeerMission {
 
     @Override
     public boolean start() {
-        // TODO 开启自动保存进度
-        // TODO 存储下载信息
         BtRuntime runtime = getBtRuntime();
         BtClientBuilder builder = getBtClientBuilder(runtime);
 
@@ -42,10 +39,10 @@ public class BitTorrentMission extends PeerToPeerMission {
             supplier = () -> runtime.service(IMetadataService.class).fromInputStream(in);
             getMetaData().setDotTorrentFilePath(torrentFilePath);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
 
-        BtClient btClient = builder
+        btClient = builder
                 .torrent(Objects.requireNonNull(supplier))
                 .afterTorrentFetched(torrent -> {
                     getMetaData().setFileSize(torrent.getSize());
@@ -53,25 +50,16 @@ public class BitTorrentMission extends PeerToPeerMission {
                 })
                 .stopWhenDownloaded()
                 .build();
-        startDownload(btClient);
+        startDownload();
 
         return true;
     }
 
-
-    @Override
-    public boolean pause() {
-        return false;
-    }
-
     @Override
     public boolean resume() {
-        return false;
-    }
+        updateBtInfoMap(btInfoMap, getBtRuntime().getConfig());
 
-    @Override
-    public boolean delete() {
-        return false;
+        return start();
     }
 
 }

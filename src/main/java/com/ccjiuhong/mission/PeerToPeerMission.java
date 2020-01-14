@@ -26,8 +26,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 点对点类型下载任务
@@ -42,12 +44,20 @@ public abstract class PeerToPeerMission extends GenericMission {
 
     protected CompletableFuture<?> completableFuture;
 
+    protected BtClient btClient;
+
+    protected static BtRuntime btRuntime;
+
     public PeerToPeerMission(int missionId, String targetDirectory, String targetFileName) {
         super(missionId, targetDirectory, targetFileName);
     }
 
+    @Override
+    public boolean start() {
+        throw new UnsupportedOperationException("不支持开始下载");
+    }
 
-    protected void startDownload(BtClient btClient) {
+    protected void startDownload() {
         // 开始下载
         long[] downloaded = {0L, 0L};
         getMetaData().setStatus(EnumDownloadStatus.DOWNLOADING);
@@ -69,10 +79,11 @@ public abstract class PeerToPeerMission extends GenericMission {
                             persist.serializeDescriptors(torrentId, getMetaData().getDotTorrentFilePath());
                         }
                     } catch (Exception e) {
-                        log.error("持久化种子信息失败", e);
+                        log.debug("持久化种子信息失败", e);
                     }
                 }, 1000);
         log.info("新增BT下载任务，任务ID为{}，文件总大小为{}", getMissionId(), getMetaData().getFileSize());
+        getMetaData().setStatus(EnumDownloadStatus.DOWNLOADING);
     }
 
     protected BtClientBuilder getBtClientBuilder(BtRuntime runtime) {
@@ -85,7 +96,8 @@ public abstract class PeerToPeerMission extends GenericMission {
     }
 
     protected static BtRuntime getBtRuntime() {
-
+        if (btRuntime != null)
+            return btRuntime;
 
         // 开启多线程下载的配置
         Config config = new Config() {
@@ -96,15 +108,7 @@ public abstract class PeerToPeerMission extends GenericMission {
         };
 
 
-        try {
-            File file = new File(config.getWorkDirectory(), "descriptors.rd");
-            JSONObject jsonObject = JSON.parseObject(FileUtil.readText(file));
-            for (String key : jsonObject.keySet()) {
-                btInfoMap.put(TorrentId.fromBytes(Protocols.fromHex(key)), BtInfo.fromJSONObject(jsonObject.getJSONObject(key)));
-            }
-        } catch (Exception e) {
-            log.warn("未能正确读取进度文件");
-        }
+        updateBtInfoMap(btInfoMap, config);
 
         // 开启从公开路由器启动 （enable bootstrapping from public routers）
         Module dhtModule = new DHTModule(new DHTConfig() {
@@ -125,22 +129,79 @@ public abstract class PeerToPeerMission extends GenericMission {
                 );
             }
         });
-        return BtRuntime.builder().config(config).autoLoadModules().module(dhtModule).build();
+        btRuntime = BtRuntime.builder().config(config).autoLoadModules().module(dhtModule).build();
+        return btRuntime;
+    }
+
+    protected static void updateBtInfoMap(Map<TorrentId, BtInfo> btInfoMap, Config config) {
+        try {
+            File file = new File(config.getWorkDirectory(), "descriptors.rd");
+            JSONObject jsonObject = JSON.parseObject(FileUtil.readText(file));
+            for (String key : jsonObject.keySet()) {
+                btInfoMap.put(TorrentId.fromBytes(Protocols.fromHex(key)), BtInfo.fromJSONObject(jsonObject.getJSONObject(key)));
+            }
+        } catch (Exception e) {
+            log.warn("未能正确读取进度文件");
+        }
+    }
+
+    protected static void writeBtInfo(Map<TorrentId, BtInfo> btInfoMap, Config config) {
+        try {
+            File file = new File(config.getWorkDirectory(), "descriptors.rd");
+            Map<String, String> map = btInfoMap.entrySet().stream().collect(Collectors.toMap(
+                    e -> e.getKey().toString(), e -> e.getValue().toString()
+            ));
+            if (!map.isEmpty())
+                FileUtil.writeText(file, JSON.toJSONString(map));
+        } catch (Exception e) {
+            log.warn("未能正确写入进度文件");
+        }
     }
 
     @Override
     public boolean pause() {
-        return false;
+        if (btClient == null) {
+            throw new IllegalStateException("未找到BT客户端");
+        }
+        try {
+            if (btClient.isStarted()) {
+                btClient.stop();
+            }
+
+            getMetaData().setStatus(EnumDownloadStatus.PAUSED);
+
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
     }
 
     @Override
     public boolean resume() {
-        return false;
+        throw new UnsupportedOperationException("不支持继续下载");
     }
 
     @Override
     public boolean delete() {
-        return false;
+        if (btClient == null) {
+            throw new IllegalStateException("未找到BT客户端");
+        }
+        try {
+            if (btClient.isStarted()) {
+                btClient.stop();
+            }
+
+
+            TorrentId torrentId = TorrentId.fromBytes(Protocols.fromHex(getMetaData().getUniqueIdentifier()));
+            btInfoMap.remove(torrentId);
+            writeBtInfo(btInfoMap, getBtRuntime().getConfig());
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+
     }
 
 }

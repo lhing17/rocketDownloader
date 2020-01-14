@@ -27,6 +27,7 @@ public final class FileUtil {
 
     /**
      * 将全部文件内容读成一个字符串
+     *
      * @param file 要读取的文件
      * @return 文件内容的字符串
      */
@@ -46,10 +47,11 @@ public final class FileUtil {
 
     /**
      * 将字符串一次性写入文件中
+     *
      * @param file 要写入内容的目标文件
      * @param text 要写入的字符串
      */
-    public static void writeText(File file, String text) {
+    public synchronized static void writeText(File file, String text) {
         try (FileWriter fileWriter = new FileWriter(file)) {
             fileWriter.write(text);
         } catch (IOException e) {

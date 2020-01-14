@@ -83,10 +83,10 @@ public class JsonTorrentRegistry implements TorrentRegistry, TorrentPersist {
                 }
                 btInfo.setBlockCounts(blockCounts);
                 btInfo.setBlockBitMasks(blockBitmasks);
-                map.put(entry.getKey().toString(), btInfo.toString());
-                if (entry.getKey() == torrentId && StringUtils.isNotEmpty(dotTorrentFilePath)) {
+                if (entry.getKey().toString().equals(torrentId.toString()) && StringUtils.isNotEmpty(dotTorrentFilePath)) {
                     btInfo.setDotTorrentFilePath(dotTorrentFilePath);
                 }
+                map.put(entry.getKey().toString(), btInfo.toString());
             }
         }
         if (!map.isEmpty())

@@ -1,7 +1,6 @@
 package com.ccjiuhong.mission;
 
 import bt.BtClientBuilder;
-import bt.runtime.BtClient;
 import bt.runtime.BtRuntime;
 import com.ccjiuhong.util.DotTorrentFileGenerator;
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +27,12 @@ public class MagnetMission extends PeerToPeerMission {
 
     @Override
     public boolean start() {
-        // TODO 开启自动保存进度
-        // TODO 存储下载信息
+
         BtRuntime runtime = getBtRuntime();
         BtClientBuilder builder = getBtClientBuilder(runtime);
 
         // 创建客户端
-        BtClient btClient = builder
+        btClient = builder
                 .magnet(magnetUrl)
                 .afterTorrentFetched(torrent -> {
                     getMetaData().setFileSize(torrent.getSize());
@@ -52,23 +50,9 @@ public class MagnetMission extends PeerToPeerMission {
                 })
                 .stopWhenDownloaded()
                 .build();
-        startDownload(btClient);
+        startDownload();
 
         return true;
     }
 
-    @Override
-    public boolean pause() {
-        return super.pause();
-    }
-
-    @Override
-    public boolean resume() {
-        return super.resume();
-    }
-
-    @Override
-    public boolean delete() {
-        return super.delete();
-    }
 }

@@ -17,7 +17,7 @@ import java.util.List;
 public class TorrentTest {
     @Test
     public void torrentMetaData() throws IOException {
-        String dotTorrentFilePath = "/home/lhing17/a.torrent";
+        String dotTorrentFilePath = "/home/lhing17/rocketDownloader/5800e072b34ba6dd2ae2bf72940bbd4a831a6ac2.torrent";
         IMetadataService service = new MetadataService();
         Torrent torrent = service.fromInputStream(new FileInputStream(dotTorrentFilePath));
         List<TorrentFile> files = torrent.getFiles();
@@ -30,5 +30,6 @@ public class TorrentTest {
         System.out.println(torrent.getTorrentId());
         System.out.println(torrent.getChunkSize());
         System.out.println(torrent.getSize());
+        System.out.println(torrent.getTorrentId());
     }
 }

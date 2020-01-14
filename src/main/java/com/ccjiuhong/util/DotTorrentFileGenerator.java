@@ -5,6 +5,7 @@ import bt.metainfo.IMetadataService;
 import bt.metainfo.MetadataService;
 import bt.metainfo.Torrent;
 import bt.metainfo.TorrentFile;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
@@ -38,6 +39,54 @@ public final class DotTorrentFileGenerator {
     private static final String CREATION_DATE_KEY = "creation date";
     private static final String CREATED_BY_KEY = "created by";
 
+    private static final String DEFAULT_TRACKER = "http://tracker.trackerfix.com:80/announce";
+
+    private static final List<String> DEFAULT_TRACKERS = Arrays.asList(
+            "http://tracker.trackerfix.com:80/announce",
+            "udp://9.rarbg.me:2710/announce",
+            "udp://9.rarbg.to:2710/announce",
+            "udp://62.138.0.158:6969/announce",
+            "udp://94.158.213.92:1337/announce",
+            "udp://186.225.17.100:1337/announce",
+            "udp://152.80.120.112:2710/announce",
+            "udp://152.80.120.114:2710/announce",
+            "udp://186.19.107.254:80/announce",
+            "udp://209.83.20.20:6969/announce",
+            "udp://6.206.27.172:6969/announce",
+            "udp://177.31.241.153:80/announce",
+            "udp://38.235.174.46:2710/announce",
+            "udp://96.211.168.204:2710/announce",
+            "udp://160.100.245.181:6969/announce",
+            "http://52.68.122.172:80/announce",
+            "udp://90.234.156.205:451/announce",
+            "udp://185.105.151.164:6969/announce",
+            "udp://52.15.40.114:80/announce",
+            "http://83.209.230.66:80/announce",
+            "udp://186.83.215.123:6969/announce",
+            "udp://196.154.52.99:80/announce",
+            "http://52.38.230.101:80/announce",
+            "udp://tracker.coppersurfer.tk:6970/announce",
+            "udp://tracker.opentrackr.org:1338/announce",
+            "udp://tracker.internetwarriors.net:1338/announce",
+            "udp://10.rarbg.to:2710/announce",
+            "udp://10.rarbg.me:2710/announce",
+            "udp://tracker.openbittorrent.com:81/announce",
+            "udp://exodus.desync.com:6970/announce",
+            "udp://tracker.tiny-vps.com:6970/announce",
+            "udp://thetracker.org:81/announce",
+            "udp://retracker.lanta-net.ru:2711/announce",
+            "udp://bt.xxx-tracker.com:2711/announce",
+            "udp://tracker.cyberia.is:6970/announce",
+            "http://open.acgnxtracker.com:81/announce",
+            "udp://tracker.torrent.eu.org:452/announce",
+            "udp://explodie.org:6970/announce",
+            "udp://ipv5.tracker.harry.lu:80/announce",
+            "http://retracker.mgts.by:81/announce",
+            "udp://tracker.uw1.xyz:6969/announce",
+            "udp://open.stealth.si:81/announce",
+            "http://t.nyaatracker.com:80/announce"
+    );
+
     private static final int CHUNK_HASH_LENGTH = 20;
 
     public static void generate(Torrent torrent, OutputStream outputStream) throws IOException {
@@ -57,24 +106,37 @@ public final class DotTorrentFileGenerator {
     }
 
     private static void putAnnounceListIfPresent(Torrent torrent, Map<String, BEObject<?>> root) {
+
+        String[] tracker = {""};
+        List<List<String>> trackers = new ArrayList<>();
         torrent.getAnnounceKey().ifPresent(
                 announceKey -> {
                     if (announceKey.getTrackerUrl() != null) {
-                        root.put(ANNOUNCE_KEY, new BEString(announceKey.getTrackerUrl().getBytes(StandardCharsets.UTF_8)));
+                        tracker[0] = announceKey.getTrackerUrl();
                     }
                     if (announceKey.getTrackerUrls() != null && announceKey.getTrackerUrls().size() > 0) {
-                        List<BEList> tierList = new ArrayList<>();
-                        for (List<String> tierTrackerUrls : announceKey.getTrackerUrls()) {
-                            List<BEString> trackUrlList = new ArrayList<>();
-                            for (String tierTrackerUrl : tierTrackerUrls) {
-                                trackUrlList.add(new BEString(tierTrackerUrl.getBytes(StandardCharsets.UTF_8)));
-                            }
-                            tierList.add(new BEList(null, trackUrlList));
-                        }
-                        root.put(ANNOUNCE_LIST_KEY, new BEList(null, tierList));
+                        trackers.addAll(announceKey.getTrackerUrls());
+
                     }
-                }
-        );
+                });
+        if (StringUtils.isEmpty(tracker[0])){
+            tracker[0] = DEFAULT_TRACKER;
+        }
+        if (trackers.size() == 0) {
+            trackers.add(DEFAULT_TRACKERS);
+        }
+        root.put(ANNOUNCE_KEY, new BEString(tracker[0].getBytes(StandardCharsets.UTF_8)));
+
+        List<BEList> tierList = new ArrayList<>();
+        for (List<String> tierTrackerUrls : trackers) {
+            List<BEString> trackUrlList = new ArrayList<>();
+            for (String tierTrackerUrl : tierTrackerUrls) {
+                trackUrlList.add(new BEString(tierTrackerUrl.getBytes(StandardCharsets.UTF_8)));
+            }
+            tierList.add(new BEList(null, trackUrlList));
+        }
+        root.put(ANNOUNCE_LIST_KEY, new BEList(null, tierList));
+
     }
 
     private static void putCreateByIfPresent(Torrent torrent, Map<String, BEObject<?>> root) {

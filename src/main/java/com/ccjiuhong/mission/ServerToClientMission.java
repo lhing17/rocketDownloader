@@ -122,6 +122,7 @@ public abstract class ServerToClientMission extends GenericMission {
 
         // 修改任务状态
         status = EnumDownloadStatus.DOWNLOADING;
+        getMetaData().setStatus(status);
 
         // 存储下载信息
         saveOrUpdateDownloadInfo(runnableList);
@@ -161,6 +162,7 @@ public abstract class ServerToClientMission extends GenericMission {
             downloadThreadPool.pause(getMissionId());
             // 修改任务状态为暂停
             status = EnumDownloadStatus.PAUSED;
+            getMetaData().setStatus(status);
             // 存储下载信息
             saveOrUpdateDownloadInfo(runnableList);
             return true;
@@ -185,6 +187,7 @@ public abstract class ServerToClientMission extends GenericMission {
             resumeDownloadMission(downloadThreadPool);
             // 修改任务状态
             status = EnumDownloadStatus.DOWNLOADING;
+            getMetaData().setStatus(status);
             return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
