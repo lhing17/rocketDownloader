@@ -96,6 +96,13 @@ public class DefaultDownloadManager implements DownloadManager {
         return addMission(fileUrl, targetDirectory, targetFileName, false);
     }
 
+    /**
+     * @param fileUrl         如果为BT下载，指向的是BT种子文件的位置；否则指向的是文件地址
+     * @param targetDirectory 目标文件夹
+     * @param targetFileName  目标文件名
+     * @param isBt            是否为BT下载，注意这里只包括种子文件下载，不包括磁力链
+     * @return 任务重复时返回-1，添加成功返回任务ID
+     */
     @Override
     public int addMission(String fileUrl, String targetDirectory, String targetFileName, boolean isBt) {
         assertMissionNotExist(fileUrl);

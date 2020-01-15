@@ -51,6 +51,7 @@ public class BtInfo {
 
     /**
      * 从JSON Object中解析出BtInfo
+     *
      * @param jsonObject 存储到进度文件中的jsonObject
      * @return 解析出的btInfo
      */
@@ -81,6 +82,10 @@ public class BtInfo {
 
     private static BitSet getBitMaskFromString(String bitMaskString, int total) {
         BitSet bitSet = new BitSet(total);
+        // {}代表空的bitSet
+        if ("{}".equals(bitMaskString)) {
+            return bitSet;
+        }
         String[] arr = bitMaskString.substring(1, bitMaskString.length() - 1).split(",");
         for (String s : arr) {
             int bitIndex = Integer.parseInt(s.trim());
@@ -92,12 +97,12 @@ public class BtInfo {
     @Override
     public String toString() {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("torrentId", torrentId.toString());
+        jsonObject.put("torrentId", String.valueOf(torrentId));
         jsonObject.put("dotTorrentFilePath", dotTorrentFilePath);
         jsonObject.put("piecesTotal", piecesTotal);
-        jsonObject.put("bitMask", bitMask.toString());
+        jsonObject.put("bitMask", String.valueOf(bitMask));
         jsonObject.put("blockCounts", blockCounts);
-        jsonObject.put("blockBitMarks", blockBitMasks.stream().map(BitSet::toString).collect(Collectors.toList()));
+        jsonObject.put("blockBitMasks", blockBitMasks.stream().map(String::valueOf).collect(Collectors.toList()));
 
         return jsonObject.toString();
     }

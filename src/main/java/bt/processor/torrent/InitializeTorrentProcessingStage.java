@@ -23,9 +23,7 @@ import bt.processor.ProcessingStage;
 import bt.processor.TerminateOnErrorProcessingStage;
 import bt.processor.listener.ProcessingEvent;
 import bt.runtime.Config;
-import bt.torrent.BitfieldBasedStatistics;
-import bt.torrent.TorrentDescriptor;
-import bt.torrent.TorrentRegistry;
+import bt.torrent.*;
 import bt.torrent.data.DataWorker;
 import bt.torrent.data.IDataWorkerFactory;
 import bt.torrent.messaging.BitfieldConsumer;
@@ -34,6 +32,8 @@ import bt.torrent.messaging.MetadataProducer;
 import bt.torrent.messaging.PeerRequestConsumer;
 import bt.torrent.messaging.PieceConsumer;
 import bt.torrent.messaging.RequestProducer;
+
+import java.util.Optional;
 
 public class InitializeTorrentProcessingStage<C extends TorrentContext> extends TerminateOnErrorProcessingStage<C> {
 
@@ -56,8 +56,18 @@ public class InitializeTorrentProcessingStage<C extends TorrentContext> extends 
 
     @Override
     protected void doExecute(C context) {
-        Torrent torrent = context.getTorrent().get();
+        Torrent torrent = context.getTorrent().orElse(null);
         TorrentDescriptor descriptor = torrentRegistry.register(torrent, context.getStorage());
+        Optional<TorrentSessionState> state = context.getState();
+
+        // 恢复已下载文件的大小
+        state.ifPresent(
+                torrentSessionState -> {
+                    if (torrentSessionState instanceof DefaultTorrentSessionState) {
+                        ((DefaultTorrentSessionState) torrentSessionState).restoreDownloadedSize();
+                    }
+                }
+        );
 
         Bitfield bitfield = descriptor.getDataDescriptor().getBitfield();
         BitfieldBasedStatistics pieceStatistics = createPieceStatistics(bitfield);
