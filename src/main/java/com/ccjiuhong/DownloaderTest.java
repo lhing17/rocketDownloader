@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.net.ftp.FTPClient;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -27,14 +29,24 @@ public class DownloaderTest {
     public static void main(String[] args) {
 
 //        System.out.println(Arrays.toString(ss));
-        testStartOrResumeMagnetMission();
+        testDownload("magnet:?xt=urn:btih:5800E072B34BA6DD2AE2BF72940BBD4A831A6AC2&dn=Colette.15.10.09.Piper.Perri.Orgy.Is.The.New.Black.XXX.1080p.MP4-KTR%5Brarbg%5D");
 //        testStartOrResumeBitTorrentMission();
 //        decodeUrl();
-        testStartOrResumeHttpMission();
+//        testStartOrResumeHttpMission();
 //        List<String> urls = getAvailableUrls();
 //        for (String url : urls) {
 //            System.out.println(url);
 //        }
+    }
+
+    public static void testDownload(String url) {
+        DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
+        int missionId = defaultDownloadManager.addMission(url, "/home/lhing17/rocketDownloader", "a");
+        defaultDownloadManager.startOrResumeMission(missionId);
+
+        ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
+                new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(true).build());
+        executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(missionId)), 0, 1, TimeUnit.SECONDS);
     }
 
     private static void decodeUrl() {
@@ -73,10 +85,9 @@ public class DownloaderTest {
         executorService.scheduleAtFixedRate(() -> log.info("当前下载百分比为：" + defaultDownloadManager.getReadableDownloadedPercent(1)), 0, 1, TimeUnit.SECONDS);
     }
 
-    private static void testStartOrResumeMagnetMission() {
+    private static void testStartOrResumeMagnetMission(String url) {
         DownloadManager defaultDownloadManager = DefaultDownloadManager.getInstance();
-        String fileUrl = "magnet:?xt=urn:btih:5800E072B34BA6DD2AE2BF72940BBD4A831A6AC2&dn=Colette.15.10.09.Piper.Perri.Orgy.Is.The.New.Black.XXX.1080p.MP4-KTR%5Brarbg%5D";
-        Mission mission = new MagnetMission(1, fileUrl, "/home/lhing17/rocketDownloader", "a");
+        Mission mission = new MagnetMission(1, url, "/home/lhing17/rocketDownloader", "a");
         defaultDownloadManager.addMission(mission);
         defaultDownloadManager.startOrResumeMission(1);
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1,
