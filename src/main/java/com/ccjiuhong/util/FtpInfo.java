@@ -1,10 +1,12 @@
 package com.ccjiuhong.util;
 
 import lombok.Data;
-import sun.net.www.ParseUtil;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * 储存FTP URL中解析出的信息
@@ -62,10 +64,10 @@ public class FtpInfo {
         if (userInfo != null) { // get the user and password
             int delimiter = userInfo.indexOf(':');
             if (delimiter == -1) {
-                ftpInfo.setUsername(ParseUtil.decode(userInfo));
+                ftpInfo.setUsername(URLDecoder.decode(userInfo, UTF_8));
             } else {
-                ftpInfo.setUsername(ParseUtil.decode(userInfo.substring(0, delimiter++)));
-                ftpInfo.setPassword(ParseUtil.decode(userInfo.substring(delimiter)));
+                ftpInfo.setUsername(URLDecoder.decode(userInfo.substring(0, delimiter++), UTF_8));
+                ftpInfo.setPassword(URLDecoder.decode(userInfo.substring(delimiter), UTF_8));
             }
         }
         return ftpInfo;
@@ -100,10 +102,10 @@ public class FtpInfo {
             i = path.lastIndexOf('/');
             if (i > 0) {
                 filename = path.substring(i + 1);
-                filename = ParseUtil.decode(filename);
+                filename = URLDecoder.decode(filename, UTF_8);
                 pathname = path.substring(0, i);
             } else {
-                filename = ParseUtil.decode(path);
+                filename = URLDecoder.decode(path, UTF_8);
                 pathname = null;
             }
         } else {
