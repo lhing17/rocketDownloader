@@ -23,9 +23,16 @@ public class IconBar extends JPanel {
      * 图标按钮条下面的几个按钮
      */
     private List<JButton> tailIcons;
+    private static IconBar instance;
 
-    public IconBar(SideBar container) {
+    public static IconBar getInstance() {
+        if (instance == null) {
+            instance = new IconBar();
+        }
+        return instance;
+    }
 
+    private IconBar() {
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         leadingIcons = new ArrayList<>();
@@ -33,7 +40,7 @@ public class IconBar extends JPanel {
 
         JButton missionListButton = new ImageButton("icons/list.png", 30, 30, true);
         missionListButton.addActionListener(e -> {
-            SideMenuBar sideMenuBar = container.getSideMenuBar();
+            SideMenuBar sideMenuBar = SideMenuBar.getInstance();
             sideMenuBar.getTitle().setText("任务列表");
             for (JButton button : sideMenuBar.getButtons()) {
                 sideMenuBar.remove(button);
@@ -61,7 +68,7 @@ public class IconBar extends JPanel {
         // 配置按钮
         JButton configurationButton = new ImageButton("icons/config.png", 30, 30, true);
         configurationButton.addActionListener(e -> {
-            SideMenuBar sideMenuBar = container.getSideMenuBar();
+            SideMenuBar sideMenuBar = SideMenuBar.getInstance();
             sideMenuBar.getTitle().setText("偏好设置");
             for (JButton button : sideMenuBar.getButtons()) {
                 sideMenuBar.remove(button);
@@ -85,7 +92,7 @@ public class IconBar extends JPanel {
 
     public void addTailIcons(JButton... tailIconArray) {
         for (JButton tailIcon : tailIconArray) {
-            leadingIcons.add(tailIcon);
+            tailIcons.add(tailIcon);
             this.add(tailIcon);
         }
     }

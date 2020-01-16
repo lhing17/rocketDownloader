@@ -12,8 +12,17 @@ public class SideMenuBar extends JPanel {
 
     private final JLabel title;
     private final List<JButton> buttons;
+    private static SideMenuBar instance;
 
-    public SideMenuBar() {
+    public static SideMenuBar getInstance() {
+        if (instance == null) {
+            instance = new SideMenuBar();
+        }
+        return instance;
+    }
+
+    private SideMenuBar() {
+
         buttons = new ArrayList<>();
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
