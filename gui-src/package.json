@@ -1,0 +1,24 @@
+{
+  "name": "rocket-downloader",
+  "version": "1.0.0",
+  "description": "使用electron绘制rocketDownloader的GUI",
+  "main": "main.js",
+  "dependencies": {
+    "bootstrap": "^4.4.1",
+    "devtron": "^1.4.0",
+    "electron": "^6.1.7",
+    "jquery": "^3.4.1"
+  },
+  "devDependencies": {
+    "electron-packager": "^14.2.0"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "electron",
+    "gui"
+  ],
+  "author": "G_Seinfeld",
+  "license": "MIT"
+}
