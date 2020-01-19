@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../assets/css/bootstrap.css">
+    <style>
+        .close {
+            position: fixed;
+            top: 0;
+            right: 0;
+        }
+
+        footer {
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+            font-size: 14px;
+        }
+
+        button {
+            color: #909399;
+            border: 0;
+            background-color: transparent;
+        }
+
+        #copyright {
+            margin-left: 10px;
+        }
+
+        footer .list-inline {
+            text-align: right;
+        }
+
+        #engine-info ul {
+            width: 250px;
+        }
+
+        #engine-info ul li {
+            width: 49%;
+            margin: 0;
+            font-size: 14px;
+            color: #909399;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <button class="close">X</button>
+</div>
+<header>Version 1.4.1</header>
+<div id="engine-info">
+    <h4>引擎版本 1.34.0</h4>
+    <ul class="list-inline">
+        <li class="list-inline-item">Async DNS</li>
+        <li class="list-inline-item">BitTorrent</li>
+        <li class="list-inline-item">Firefox3 Cookie</li>
+        <li class="list-inline-item">GZip</li>
+        <li class="list-inline-item">HTTPS</li>
+        <li class="list-inline-item">Message Digest</li>
+        <li class="list-inline-item">Metalink</li>
+        <li class="list-inline-item">XML-RPC</li>
+        <li class="list-inline-item">SFTP</li>
+    </ul>
+</div>
+
+<footer class="row">
+    <div class="col-sm-3">
+        <button id="copyright">©2018 Motrix</button>
+    </div>
+    <div class="col-sm-9">
+        <ul class="list-inline">
+            <li class="list-inline-item">
+                <button id="license">开源许可</button>
+            </li>
+            <li class="list-inline-item">
+                <button id="about_us">关于我们</button>
+            </li>
+            <li class="list-inline-item">
+                <button id="support">帮助支持</button>
+            </li>
+            <li class="list-inline-item">
+                <button id="change_log">更新日志</button>
+            </li>
+        </ul>
+    </div>
+</footer>
+<script>
+
+    let $ = require('jquery')
+    let {shell} = require('electron')
+    let settings = require('electron-settings')
+
+    $(".close").click(() => {
+        window.close()
+    })
+
+    let linkMap = {
+        copyright: 'officialWebsite',
+        license: 'license',
+        about_us: 'aboutUs',
+        support: 'support',
+        change_log: 'changeLog'
+    }
+
+    // 五个按钮分别跳转
+    Object.keys(linkMap).forEach((key) => {
+        $("#" + key).click(() => {
+            shell.openExternal(settings.get(linkMap[key]))
+        })
+    })
+
+</script>
+</body>
+</html>

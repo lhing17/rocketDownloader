@@ -10,8 +10,23 @@
     visibility: hidden;
     position: absolute;
     top: 0;
+    width: 100%;
 }
 
 .aside .section.is-shown {
     visibility: visible;
+}
+
+.aside h3 {
+    margin: 20px 10px;
+}
+
+.aside ul {
+    margin: 5px 10px;
+    text-align: center;
+}
+
+.aside ul > li {
+    width: 100%;
+    margin: 5px 0;
 }
