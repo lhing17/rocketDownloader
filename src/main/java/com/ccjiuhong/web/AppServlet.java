@@ -1,4 +1,4 @@
-package com.ccjiuhong;
+package com.ccjiuhong.web;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

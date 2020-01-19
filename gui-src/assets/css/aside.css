@@ -1,0 +1,17 @@
+.aside {
+    float: left;
+    width: 200px;
+    height: 100%;
+    position: relative;
+    background-color: #f4f5f7;
+}
+
+.aside .section {
+    visibility: hidden;
+    position: absolute;
+    top: 0;
+}
+
+.aside .section.is-shown {
+    visibility: visible;
+}

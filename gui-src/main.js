@@ -1,5 +1,6 @@
 const path = require('path')
 const {app, BrowserWindow} = require('electron')
+const settings = require('electron-settings')
 
 
 const debug = /--debug/.test(process.argv[2])
@@ -14,9 +15,10 @@ function initialize() {
 
     function createWindow() {
         const windowOptions = {
-            width: 1080,
+            width: 1280,
             minWidth: 680,
-            height: 840,
+            height: 768,
+            minHeight: 400,
             title: app.getName(),
             webPreferences: {
                 nodeIntegration: true
@@ -43,6 +45,9 @@ function initialize() {
     }
 
     app.on('ready', () => {
+        // 软件相关的设置
+        settings.set('officialWebsite', 'https://github.com/lhing17/rocketDownloader')
+
         createWindow()
     })
 

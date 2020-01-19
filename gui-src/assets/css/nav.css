@@ -1,6 +1,27 @@
 .nav {
     background-color: black;
-    width: 100px;
+    width: 90px;
     height: 100%;
     float: left;
+}
+
+.gs-trailing {
+    position: fixed;
+    bottom: 0;
+}
+
+.gs-leading, .gs-trailing {
+    width: 90px;
+    text-align: center;
+}
+
+.nav > ul > li > button {
+    background-color: transparent;
+    margin: 20px 0;
+}
+
+.nav > ul > li > button > img {
+    width: 30px;
+    height: 30px;
+    filter: invert(1);
 }

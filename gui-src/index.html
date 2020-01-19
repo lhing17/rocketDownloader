@@ -6,21 +6,45 @@
 
     <link rel="stylesheet" href="assets/css/global.css">
     <link rel="stylesheet" href="assets/css/nav.css">
+    <link rel="stylesheet" href="assets/css/aside.css">
+
+    <link rel="import" href="sections/asides/config_list.html">
+    <link rel="import" href="sections/asides/task_list.html">
 </head>
 <body>
 <nav class="nav">
-    <button id="test">我是一个能点的button</button>
-    <button>我是一个button</button>
-    <button>我是一个button</button>
-    <button>我是一个button</button>
-    <button>我是一个button</button>
+    <ul class="gs-leading">
+        <li>
+            <button id="logo">
+                <img src="assets/img/R.png" alt="火箭">
+            </button>
+        </li>
+        <li>
+            <button data-section="task"><img src="assets/img/list.png" alt="列表"></button>
+        </li>
+        <li>
+            <button id="new_task"><img src="assets/img/add.png" alt="新建"></button>
+        </li>
+    </ul>
+    <ul class="gs-trailing">
+        <li>
+            <button data-section="config"><img src="assets/img/config.png" alt="配置"></button>
+        </li>
+        <li>
+            <button id="help"><img src="assets/img/about.png" alt="帮助"></button>
+        </li>
+    </ul>
 </nav>
+<aside class="aside">
+</aside>
+
 <main class="content">
 
     <p> Hello world !</p>
 </main>
 <script>
-    require ('./assets/js')
+    require('./assets/js/imports')
+    require('./assets/js')
 </script>
 </body>
 </html>
