@@ -9,22 +9,20 @@ $("#logo").click(() => {
     shell.openExternal(settings.get('officialWebsite'))
 })
 
-// 点击help弹出关于信息
-$("#help").click(() => {
-    const modalPath = path.join('file://', __dirname, '../../sections/windows/information.html')
+function openNewModal(filePath, width, height) {
+    const modalPath = path.join('file://', __dirname, filePath)
     let mainWindow = remote.getCurrentWindow()
     let win = new BrowserWindow({
         parent: mainWindow,
         modal: true,
         show: false,
         frame: false,
-        width: 600,
-        height: 400,
+        width: width || 600,
+        height: height || 400,
         webPreferences: {
             nodeIntegration: true
         }
     })
-
     win.on('close', () => {
         win = null
     })
@@ -33,6 +31,15 @@ $("#help").click(() => {
     win.once('ready-to-show', () => {
         win.show()
     })
+}
+
+$("#new_task").click(() => {
+    openNewModal('../../sections/windows/new_task.html', 600, 300);
+})
+
+// 点击help弹出关于信息
+$("#help").click(() => {
+    openNewModal('../../sections/windows/information.html', 600, 400)
 })
 
 // 点击左侧导航条按钮切换列表项

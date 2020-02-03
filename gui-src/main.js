@@ -48,7 +48,7 @@ function initialize() {
         // 软件相关的设置
         settings.set('officialWebsite', 'https://github.com/lhing17/rocketDownloader')
         settings.set('license', 'https://github.com/lhing17/rocketDownloader/blob/master/LICENSE')
-        settings.set('about_us', 'https://github.com/lhing17/rocketDownloader')
+        settings.set('aboutUs', 'https://github.com/lhing17/rocketDownloader')
         settings.set('support', 'https://github.com/lhing17/rocketDownloader/wiki')
         settings.set('changeLog', 'https://github.com/lhing17/rocketDownloader/releases')
 
