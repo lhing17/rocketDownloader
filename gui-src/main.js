@@ -1,5 +1,5 @@
 const path = require('path')
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow, ipcMain, dialog} = require('electron')
 const settings = require('electron-settings')
 
 
@@ -51,6 +51,7 @@ function initialize() {
         settings.set('aboutUs', 'https://github.com/lhing17/rocketDownloader')
         settings.set('support', 'https://github.com/lhing17/rocketDownloader/wiki')
         settings.set('changeLog', 'https://github.com/lhing17/rocketDownloader/releases')
+        settings.set('serverUrl', 'http://localhost:8080/')
 
         createWindow()
     })
@@ -65,6 +66,13 @@ function initialize() {
         if (mainWindow === null) {
             createWindow()
         }
+    })
+    ipcMain.on('open-directory-dialog', (event) => {
+        dialog.showOpenDialog({properties: ['openDirectory']}, (files) => {
+            if (files) {
+                event.sender.send('selected-directory', files)
+            }
+        })
     })
 }
 

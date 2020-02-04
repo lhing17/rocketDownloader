@@ -26,20 +26,56 @@
     <div class="tab-content">
         <div id="link" class="tab-pane fade in active">
             <p>这是链接任务</p>
+            <textarea id="links" placeholder="添加多个下载链接时，请确保每行只有一个链接（支持磁力链）">
+
+            </textarea>
+            <label for="savePath">存储路径：</label>
+            <input type="text" id="savePath">
+            <button id="selectPath">选择</button>
         </div>
         <div id="torrent" class="tab-pane fade">
             <p>这是种子任务</p>
         </div>
     </div>
+    <div class="buttons">
+        <button id="cancel" class="btn-info">取消</button>
+        <button id="submit" class="btn-warning">提交</button>
+    </div>
 </div>
 <script>
+    let {ipcRenderer} = require('electron')
     let $ = require('jquery')
+    let settings = require('electron-settings')
     require('bootstrap')
 
     $(function () {
-        $('#tabs li:eq(1) a').tab('show');
+        $('#tabs li:eq(0) a').tab('show');
         $(".close").click(() => {
             window.close()
+        })
+
+        // 点击打开选择路径的对话框
+        $("#selectPath").click(() => ipcRenderer.send('open-directory-dialog'))
+
+        // 监听返回的选中文件夹路径
+        ipcRenderer.on('selected-directory', (event, path) => {
+            $("#savePath").val(path)
+        })
+
+        // 提交下载
+        $("#submit").click(function () {
+            // 下载链接
+            let links = $("#links").val()
+            // 保存路径
+            let savePath = $("#savePath").val()
+            $.ajax({
+                url: settings.get('serverUrl') + "startDownloading",
+                data: {links: links, savePath: savePath},
+                success: () => {
+                },
+                error: () => {
+                }
+            })
         })
     });
 </script>
