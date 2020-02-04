@@ -34,7 +34,7 @@ function openNewModal(filePath, width, height) {
 }
 
 $("#new_task").click(() => {
-    openNewModal('../../sections/windows/new_task.html', 600, 300);
+    openNewModal('../../sections/windows/new_task.html', 800, 300);
 })
 
 // 点击help弹出关于信息

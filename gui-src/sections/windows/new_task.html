@@ -8,6 +8,18 @@
         .popup {
             border-radius: 20px;
         }
+
+        body {
+            font-size: 14px;
+        }
+
+        .operations {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+        }
+
+
     </style>
 </head>
 <body>
@@ -24,22 +36,31 @@
         </li>
     </ul>
     <div class="tab-content">
-        <div id="link" class="tab-pane fade in active">
-            <p>这是链接任务</p>
-            <textarea id="links" placeholder="添加多个下载链接时，请确保每行只有一个链接（支持磁力链）">
+        <div id="link" class="tab-pane fade in active container">
+            <form>
+                <div class="form-group row">
+                    <div class="col-sm-12 align-content-center">
+                    <textarea class="form-control" id="links" placeholder="添加多个下载链接时，请确保每行只有一个链接（支持磁力链）">
 
-            </textarea>
-            <label for="savePath">存储路径：</label>
-            <input type="text" id="savePath">
-            <button id="selectPath">选择</button>
+                    </textarea>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label" for="savePath">存储路径：</label>
+                    <div class="col-sm-10 input-group">
+                        <input class="form-control" type="text" id="savePath">
+                        <button class="input-group-addon" id="selectPath">选择</button>
+                    </div>
+                </div>
+            </form>
         </div>
         <div id="torrent" class="tab-pane fade">
             <p>这是种子任务</p>
         </div>
     </div>
-    <div class="buttons">
-        <button id="cancel" class="btn-info">取消</button>
-        <button id="submit" class="btn-warning">提交</button>
+    <div class="operations">
+        <button id="cancel" class="btn btn-light">取消</button>
+        <button id="submit" class="btn btn-success">提交</button>
     </div>
 </div>
 <script>
