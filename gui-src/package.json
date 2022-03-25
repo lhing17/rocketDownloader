@@ -6,7 +6,7 @@
   "dependencies": {
     "bootstrap": "^4.4.1",
     "devtron": "^1.4.0",
-    "electron": "^6.1.7",
+    "electron": "^13.6.6",
     "electron-settings": "^3.2.0",
     "jquery": "^3.4.1",
     "popper.js": "^1.16.1"
